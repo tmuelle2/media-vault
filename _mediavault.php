@@ -5,7 +5,7 @@ Text Domain: mgjp_mediavault
 Plugin URI:
 Description: Protect attachment files from direct access using powerful and flexible restrictions. Offer safe download links for any file in your uploads folder.
 Version: 0.6
-Author: Max G J Panas
+Author: Max GJP
 Author URI: http://maxpanas.com
 License: GPLv3 or later
 
