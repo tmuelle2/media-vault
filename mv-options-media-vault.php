@@ -114,7 +114,7 @@ function mgjp_mv_render_default_upload_protection_field( $args ) {
     <input type="checkbox" id="mgjp_mv_default_upload_protection" name="mgjp_mv_options[default_upload_protection]" <?php if ( isset( $options['default_upload_protection'] ) ) checked( $options['default_upload_protection'], 'on' ); ?>>
 
     <span class="description">
-      <?php _e( 'Set media file upload protection to be enabled by default.', 'mgjp_mediavault' ); ?>
+      <?php _e( 'Set media file upload protection to be enabled by default when uploading new files.', 'mgjp_mediavault' ); ?>
     </span>
 
   </label>

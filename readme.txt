@@ -1,7 +1,7 @@
 === Media Vault ===
-Contributors: Max GJ Panas
+Contributors: Max GJP
 Donate Link:
-Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads
+Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images
 Requires at least: 3.2.0
 Tested up to: 3.6.2
 Stable tag: 0.6
@@ -52,7 +52,7 @@ where 'ids' are the comma separated list of attachment ids you would like to mak
 
 = Downloading from WordPress.org =
 
-1. Clicking the big 'Download' button on the right on this page (wordpress.org/plugins/mediavault) will download the plugin's `zip` folder (`mediavault.zip`).
+1. Clicking the big 'Download' button on the right on this page (wordpress.org/plugins/media-vault) will download the plugin's `zip` folder (`mediavault.zip`).
 1. Upload this `zip` folder to your server; to the `/wp-content/plugins/` directory of the site you wish to install the plugin on.
 1. Extract the contents of the `zip`. Once it is done you can delete the `mediavault.zip` file if you wish.
 1. Activate the plugin through the 'Plugins' menu in WordPress.
@@ -74,9 +74,21 @@ You can verify that the action took effect by looking at the Media Vault column 
 
 == Changelog ==
 
+= 0.7 =
+*Minor remastering of permission checking code to address protected attachment access from within the WordPress backend. Highly recommended to immediately update.*
 
+* Rewrote default permissions to return rather than using `wp_die` directly. They now MUST either return `true` upon determining the current user is permitted to access a particular attachment; or if access is denied: `false` or a [`WP_Error`](http://codex.wordpress.org/Class_Reference/WP_Error) object with an error message included. 
+* Added `mgjp_mv_admin_check_user_permitted()` function to use permission functions to change access to attachments while within the WP Admin.
+* Hooked into the 'user_has_cap' and 'media_row_actions' filters to restrict what users could see and manipulate in the backend for the specific attachments they did not have the permission to access.
+* Rewrote the custom permission checking function handling section of the file-handling script `mv-file-handler.php` to accommodate the changes to the way custom permission functions now return values.
+
+= 0.6 =
+Initial Release.
 
 == Upgrade Notice ==
+
+= 0.7 =
+Version 0.7 includes minor remastering of the permission checking code, to address protected attachment access from within the WordPress backend. It is strongly recommended that you upgrade from version 0.6.
 
 = 0.6 =
 This is the original release version.

@@ -11,6 +11,31 @@
  */
 
 
+
+/**
+ * Remove WP List Table row actions in the Media Library List Table
+ * if the attachment is protected and the user is not permitted to access it
+ *
+ * @since 0.7
+ *
+ * @uses mgjp_mv_admin_check_user_permitted() returns true if user is permitted to access
+ *                                            specified attachment
+ * @param $actions array Array of row actions available for specific attachment
+ * @param $post object WP_Post object of currently rendering attachment
+ * @return array Return row actions untouched if user permitted to access attachment
+ * @return array Empty array if no access permitted
+ */
+function mgjp_mv_modify_media_library_row_actions( $actions, $post ) {
+
+  // check if current user is permitted to access the post
+  if ( mgjp_mv_admin_check_user_permitted( $post->ID ) )
+    return $actions;
+
+  return array();
+}
+add_filter( 'media_row_actions', 'mgjp_mv_modify_media_library_row_actions', 10, 2 );
+
+
 /**
  * Register Media Vault custom column to WP Media Library (wp-admin/upload.php)
  * list table.
@@ -50,8 +75,10 @@ function mgjp_mv_render_media_library_custom_column( $column_name, $post_id ) {
     echo '<em>', esc_html__( 'Protected Media', 'mgjp_mediavault' ), '</em>';
 
     $permission = isset( $meta['permission'] ) && ! empty( $meta['permission'] ) ?
-                    $permissions[$meta['permission']] :
-                    $permissions[get_option( 'mgjp_mv_default_permission', 'logged-in' )];
+                    $meta['permission'] :
+                    get_option( 'mgjp_mv_default_permission', 'logged-in' );
+
+    $permission = isset( $permissions[$permission] ) ? $permissions[$permission] : '';
 
     $description = isset( $permission['description'] ) && ! empty( $permission['description'] ) ?
                     esc_html( $permission['description'] ) :

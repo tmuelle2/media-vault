@@ -2,10 +2,10 @@
 /*
 Plugin Name: Media Vault
 Text Domain: mgjp_mediavault
-Plugin URI:
+Plugin URI: http://wordpress.org/plugins/media-vault/
 Description: Protect attachment files from direct access using powerful and flexible restrictions. Offer safe download links for any file in your uploads folder.
-Version: 0.6
-Author: Max GJP
+Version: 0.7
+Author: Max GJ Panas
 Author URI: http://maxpanas.com
 License: GPLv3 or later
 
@@ -64,25 +64,29 @@ $mgjp_mv_permissions = array(
                     'description'  => __( 'Admin users only', 'mgjp_mediavault' ),
                     'select'       => __( 'Admin users', 'mgjp_mediavault' ),
                     'logged_in'    => true,
+                    'run_in_admin' => true,
                     'cb'           => 'mgjp_mv_check_admin_permission'
                   ),
   'author'    =>  array(
-                    'description' => __( 'The file\'s author', 'mgjp_mediavault' ),
-                    'select'      => __( 'The file\'s author', 'mgjp_mediavault' ),
-                    'logged_in'   => true,
-                    'cb'          => 'mgjp_mv_check_author_permission'
+                    'description'  => __( 'The file\'s author', 'mgjp_mediavault' ),
+                    'select'       => __( 'The file\'s author', 'mgjp_mediavault' ),
+                    'logged_in'    => true,
+                    'run_in_admin' => true,
+                    'cb'           => 'mgjp_mv_check_author_permission'
                   ),
   'logged-in' =>  array(
-                    'description' => __( 'All logged-in users', 'mgjp_mediavault' ),
-                    'select'      => __( 'Logged-in users', 'mgjp_mediavault' ),
-                    'logged_in'   => true,
-                    'cb'          => null
+                    'description'  => __( 'All logged-in users', 'mgjp_mediavault' ),
+                    'select'       => __( 'Logged-in users', 'mgjp_mediavault' ),
+                    'logged_in'    => true,
+                    'run_in_admin' => false,
+                    'cb'           => false
                   ),
   'all'       =>  array(
-                    'description' => __( 'Anyone', 'mgjp_mediavault' ),
-                    'select'      => __( 'Anyone', 'mgjp_mediavault' ),
-                    'logged_in'   => false,
-                    'cb'          => null
+                    'description'  => __( 'Anyone', 'mgjp_mediavault' ),
+                    'select'       => __( 'Anyone', 'mgjp_mediavault' ),
+                    'logged_in'    => false,
+                    'run_in_admin' => false,
+                    'cb'           => false
                   )
 );
 
@@ -93,7 +97,9 @@ $mgjp_mv_permissions = array(
  */
 function mgjp_mv_check_admin_permission() {
   if ( ! current_user_can( 'manage_options' ) )
-    wp_die( __( 'You do not have sufficient permissions to view this file.', 'mgjp_mediavault' ) );
+    return new WP_Error( 'not_admin', __( 'You do not have sufficient permissions to view this file.', 'mgjp_mediavault' ) );
+
+  return true;
 }
 
 /**
@@ -102,15 +108,17 @@ function mgjp_mv_check_admin_permission() {
  * @since 0.4
  */
 function mgjp_mv_check_author_permission( $attachment_id ) {
-  if ( ! current_user_can( 'manage_options' ) ) {
 
-    if ( ! isset( $attachment_id ) || empty( $attachment_id ) )
-      wp_die( __( 'There was an error determining this attachment\'s author. Please contact the website administrator.', 'mgjp_mediavault' ) );
+  if ( current_user_can( 'manage_options' ) )
+    return true;
 
-    if ( get_current_user_id() != get_post_field( 'post_author', $attachment_id, 'raw' ) )
-      wp_die( __( 'You do not have sufficient permissions to view this file.', 'mgjp_mediavault' ) );
+  if ( ! isset( $attachment_id ) || empty( $attachment_id ) )
+    return new WP_Error( 'no_id', __( 'There was an error determining this attachment\'s author. Please contact the website administrator.', 'mgjp_mediavault' ) );
 
-  }
+  if ( get_current_user_id() != get_post_field( 'post_author', $attachment_id, 'raw' ) )
+    return new WP_Error( 'not_author', __( 'You do not have sufficient permissions to view this file.', 'mgjp_mediavault' ) );
+
+  return true;
 }
 
 
@@ -124,18 +132,21 @@ function mgjp_mv_check_author_permission( $attachment_id ) {
  * @param $args array Array of arguments for permission must include:
  *                    'description' string Human readable short description of permission
  *                    'select' string Human readable very consice description of permission, used in option of select element
- *                    'run_in_admin' bool Whether to run the permission check in WP Admin
  *                    'logged_in' bool Whether the user must be at least logged in
- *                    'cb' string Function name to be called to evaluate file access permissions
+ *                    'run_in_admin' bool Whether to run the permission check in WP Admin
+ *                    'cb' string Function name to be called to evaluate file access permissions, false if no callback desired
+ *                                Function MUST return TRUE if access permitted to file and FALSE or WP_Error if access denied
  * @return bool false on failure, true on success
  */
 function mgjp_mv_add_permission( $name, $args ) {
 
-  $allowed_keys = array( 'description', 'select', 'logged_in', 'cb' );
+  $allowed_keys = array( 'description', 'select', 'logged_in', 'run_in_admin', 'cb' );
 
   $safe_args = array();
-  foreach ( $allowed_keys as $key )
-    $safe_args[$key] = $args[$key];
+  foreach ( $allowed_keys as $key ) {
+    if ( isset( $args[$key] ) )
+      $safe_args[$key] = $args[$key];
+  }
 
   if ( count( $allowed_keys ) !== count( $safe_args ) )
     return false;
@@ -166,6 +177,117 @@ function mgjp_mv_get_the_permissions() {
   return apply_filters( 'mgjp_mv_edit_permissions', $mgjp_mv_permissions );
 
 }
+
+/**
+ * Returns the Media Vault file access permission for an attachment
+ * or false if the attachment's files are not marked as protected
+ *
+ * @since 0.7
+ *
+ * @return bool false if attachment is not protected
+ * @return string the permission name-id set for this attachment if it is protected
+ */
+function mgjp_mv_get_the_permission( $attachment_id ) {
+
+  if ( ! $meta = get_post_meta( $attachment_id, 'mgjp_mv_meta', true ) )
+    return false;
+
+  if ( ! isset( $meta['is_protected'] ) || ! $meta['is_protected'] )
+    return false;
+
+  $permission = isset( $meta['permission'] ) && ! empty( $meta['permission'] ) ?
+                  $meta['permission'] :
+                  get_option( 'mgjp_mv_default_permission', 'logged-in' );
+
+  return $permission;
+}
+
+/**
+ * Check if the current user is permitted to access an attachment of a
+ * specified ID within the WordPress Admin
+ *
+ * @since 0.7
+ *
+ * @uses mgjp_mv_get_the_permission()
+ * @uses mgjp_mv_get_the_permissions()
+ * @param $attachment_id int The id of the attachment to check against
+ * @return bool True if current user access permitted
+ * @return bool False if current user access denied
+ */
+function mgjp_mv_admin_check_user_permitted( $attachment_id ) {
+
+  // check if post is attachment & if it has protection and permissions set on it
+  if ( ! $permission = mgjp_mv_get_the_permission( $attachment_id ) )
+    return true;
+
+  $permissions = mgjp_mv_get_the_permissions();
+
+  // check if permission set on attachment is valid
+  if ( ! isset( $permissions[$permission] ) )
+    return false; // it is better to fail safely than to reveal something we should not
+
+  // check if permission check is set to need not run in admin
+  if ( isset( $permissions[$permission]['run_in_admin'] ) && ! $permissions[$permission]['run_in_admin'] )
+    return true;
+
+  // check if permission callback is set to false
+  if ( isset( $permissions[$permission]['cb'] ) && false === $permissions[$permission]['cb'] )
+    return true;
+
+  // if not false (above), check if permission callback is valid, fail safely if it is not
+  if ( ! is_callable( $permissions[$permission]['cb'] ) )
+    return false;
+
+  // perform the defined permission check callback on the user for this attachment
+  // function MUST return true if the user is allowed access
+  $permission_check = call_user_func( $permissions[$permission]['cb'], $attachment_id );
+
+  // if there are no errors permit access
+  if ( true === $permission_check )
+    return true;
+
+  return false;
+}
+
+
+/**
+ * Function for the 'user_has_cap' WP Core filter. Checks the permissions set
+ * on an attachment before making it available to a user to edit/delete/read.
+ *
+ * @since 0.7
+ *
+ * @uses mgjp_mv_admin_check_user_permitted()
+ * @param $allcaps array Array of all user capabilities
+ * @param $cap array  [0] string capability required
+ * @param $args array [0] string capability requested
+ *                    [1] int user ID
+ *                    [2] int post ID
+ * @return array @param $allcaps unchanged if user permitted to access post
+ * @return array @param $allcaps with capability @param $cap[0] set to false
+ */
+function mgjp_mv_edit_capabilities( $allcaps, $cap, $args ) {
+
+  $disallowed_caps = array(
+    'edit_post',
+    'delete_post',
+    'read_post'
+  );
+
+  if ( ! in_array( $args[0], $disallowed_caps ) )
+    return $allcaps;
+
+  if ( ! isset( $args[2] ) )
+    return $allcaps;
+
+  // check if user is permitted to access the post
+  if ( mgjp_mv_admin_check_user_permitted( $args[2] ) )
+    return $allcaps;
+
+  $allcaps[$cap[0]] = false;
+
+  return $allcaps;
+}
+add_filter( 'user_has_cap', 'mgjp_mv_edit_capabilities', 10, 3 );
 
 
 /**
