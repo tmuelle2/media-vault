@@ -11,6 +11,21 @@
 
 
 /**
+ * Add custom styles to the media upload page
+ *
+ * @since 0.2
+ */
+function mgjp_mv_media_new_options_css() {
+
+  $screen = get_current_screen();
+  if ( 'media' == $screen->base && 'add' == $screen->action )
+    wp_enqueue_style( 'mgjp-mv-media-new-styles', plugin_dir_url( __FILE__ ) . 'css/mv-media-new.css', 'screen', null );
+
+}
+add_action( 'admin_enqueue_scripts', 'mgjp_mv_media_new_options_css' );
+
+
+/**
  * Js for uploads page updates a plupload var controlling
  * whether an upload is moved to the protected directory
  * or not.
@@ -120,20 +135,5 @@ function mgjp_mv_render_media_new_options_message_box() {
   <?php endif;
 }
 add_action( 'pre-plupload-upload-ui', 'mgjp_mv_render_media_new_options_message_box' );
-
-
-/**
- * Add custom styles to the media upload page
- *
- * @since 0.2
- */
-function mgjp_mv_media_new_options_css() {
-
-  $screen = get_current_screen();
-  if ( 'media' == $screen->base && 'add' == $screen->action )
-    wp_enqueue_style( 'mgjp-mv-styles', plugin_dir_url( __FILE__ ) . 'css/mv-media-new.css', 'screen', null );
-
-}
-add_action( 'admin_enqueue_scripts', 'mgjp_mv_media_new_options_css' );
 
 ?>
