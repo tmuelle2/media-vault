@@ -5,7 +5,7 @@
  * @package WordPress_Plugin
  * @package MediaVault
  *
- * @author Max G J Panas <m@maxpana.com>
+ * @author Max G J Panas <m@maxpanas.com>
  * @license GPL-3.0+
  */
 

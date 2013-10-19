@@ -244,7 +244,7 @@ switch( $action ) {
 
       // check if file is already protected
       $meta = get_post_meta( $media_id, 'mgjp_mv_meta', true );
-      if ( ! empty( $meta ) && $meta['is_protected']  )
+      if ( ! empty( $meta ) && $meta['is_protected'] )
         continue;
 
       $file = get_post_meta( $media_id, '_wp_attached_file', true );
@@ -254,8 +254,9 @@ switch( $action ) {
         dirname( $file )
       );
 
-      if ( ! mgjp_move_attachment_files( $media_id, $new_reldir ) )
-        wp_die( __( 'There was an error moving the files to the protected directory.', 'mgjp_mediavault' ) );
+      $move = mgjp_move_attachment_files( $media_id, $new_reldir );
+      if ( is_wp_error( $move ) )
+        wp_die( __( 'There was an error moving the files to the protected directory.', 'mgjp_mediavault' ) . '<br/>' .  $move->get_error_message() );
 
       $meta['is_protected'] = true;
       update_post_meta( $media_id, 'mgjp_mv_meta', $meta );
@@ -292,7 +293,7 @@ switch( $action ) {
 
       $move = mgjp_move_attachment_files( $media_id, $new_reldir );
       if ( is_wp_error( $move ) )
-        wp_die( __( 'There was an error moving the files from the protected directory.', 'mgjp_mediavault' ) . PHP_EOL .  $move->get_error_message() );
+        wp_die( __( 'There was an error moving the files from the protected directory.', 'mgjp_mediavault' ) . '<br/>' .  $move->get_error_message() );
         
       $meta['is_protected'] = false;
       update_post_meta( $media_id, 'mgjp_mv_meta', $meta );

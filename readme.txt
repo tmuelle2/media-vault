@@ -4,7 +4,7 @@ Donate Link:
 Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images
 Requires at least: 3.2.0
 Tested up to: 3.6.2
-Stable tag: 0.7
+Stable tag: 0.7.1
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -16,15 +16,18 @@ When you upload a file in WordPress, that file gets saved into your WordPress up
 
 Now let's say you create a Private Post which you only want to share with certain people. WordPress let's you do this with the Password Protect feature. However if that post contains sensitive attachment files such as images, video, pdfs, etc. those attachments' files are not protected in any way and anyone that has or can obtain the addresses to these files can easily just directly access them and view or download them to their heart's content.
 
-This is where Media Vault steps in.
+**That is where Media Vault steps in.**
 
 = Protected Attachment Files =
 
-Media Vault cordons off a section of your WordPress uploads folder and secures it, protecting all files within by passing requests for them through a powerful and flexible set of permission checks.
+Media Vault cordons off a section of your WordPress uploads folder and secures it, protecting all files within by passing requests for them through a *powerful and flexible* set of permission checks.
 
-After activating the plugin, to protect attachment files with Media Vault you can either use the Media Uploader Admin page to upload new protected attachments, or, using bulk actions in your Media Library page, you can change file protection on multiple pre-existing attachments at once.
+After activating the plugin, to protect attachment files with Media Vault you can:
+* use the *Media Uploader admin page* to upload new protected attachments,
+* use the *Media Vault metabox* to toggle file protection on the 'Edit Media' admin page, or,
+* using *bulk actions* in your Media Library page, you can change file protection on multiple pre-existing attachments at once.
 
-By default the only permission check that the plugin does on media files is that the user requesting them be logged in. You can change this default behavior from the 'Media Settings' page in the 'Settings' menu of the WordPress Admin.
+By default the only permission check that the plugin does on media files is that the user requesting them be logged in. You can change this default behavior from the 'Media Settings' page in the 'Settings' menu of the WordPress Admin. You can also change the restrictions set on attachments on an individual basis by means of the Media Vault metabox on the 'Edit Media' page.
 
 = Safe Download Links =
 
@@ -74,6 +77,9 @@ You can verify that the action took effect by looking at the Media Vault column 
 
 == Changelog ==
 
+= 0.7.1 =
+The Metabox - added a Media Vault metabox to the attachment editor screen to manage protection meta + bugfixing on the bulk actions script
+
 = 0.7 =
 *Minor remastering of permission checking code to address protected attachment access from within the WordPress backend. Highly recommended to immediately update.*
 
@@ -86,6 +92,9 @@ You can verify that the action took effect by looking at the Media Vault column 
 Initial Release.
 
 == Upgrade Notice ==
+
+= 0.7.1 =
+The Metabox - added a Media Vault metabox to the attachment editor screen to manage protection meta + bugfixing
 
 = 0.7 =
 Version 0.7 includes minor remastering of the permission checking code, to address protected attachment access from within the WordPress backend. It is strongly recommended that you upgrade from version 0.6.

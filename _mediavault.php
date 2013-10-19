@@ -4,7 +4,7 @@ Plugin Name: Media Vault
 Text Domain: mgjp_mediavault
 Plugin URI: http://wordpress.org/plugins/media-vault/
 Description: Protect attachment files from direct access using powerful and flexible restrictions. Offer safe download links for any file in your uploads folder.
-Version: 0.7
+Version: 0.7.1
 Author: Max GJ Panas
 Author URI: http://maxpanas.com
 License: GPLv3 or later
@@ -175,7 +175,6 @@ function mgjp_mv_get_the_permissions() {
   global $mgjp_mv_permissions;
 
   return apply_filters( 'mgjp_mv_edit_permissions', $mgjp_mv_permissions );
-
 }
 
 /**
@@ -329,6 +328,19 @@ function mgjp_mv_media_library_options_include() {
 
 }
 add_action( 'load-upload.php', 'mgjp_mv_media_library_options_include' );
+
+
+/**
+ * Include the custom attachment metabox functions
+ *
+ * @since 0.7.1
+ */
+function mgjp_mv_attachment_metabox_include() {
+
+  include_once( plugin_dir_path( __FILE__ ) . 'mv-metaboxes.php' );
+
+}
+add_action( 'admin_init', 'mgjp_mv_attachment_metabox_include' );
 
 
 /**
