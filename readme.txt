@@ -23,6 +23,7 @@ Now let's say you create a Private Post which you only want to share with certai
 Media Vault cordons off a section of your WordPress uploads folder and secures it, protecting all files within by passing requests for them through a *powerful and flexible* set of permission checks.
 
 After activating the plugin, to protect attachment files with Media Vault you can:
+
 * use the *Media Uploader admin page* to upload new protected attachments,
 * use the *Media Vault metabox* to toggle file protection on the 'Edit Media' admin page, or,
 * using *bulk actions* in your Media Library page, you can change file protection on multiple pre-existing attachments at once.
