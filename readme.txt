@@ -4,7 +4,7 @@ Donate Link:
 Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images
 Requires at least: 3.2.0
 Tested up to: 3.6.2
-Stable tag: 0.7
+Stable tag: 0.7.1
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
