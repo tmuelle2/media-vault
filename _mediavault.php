@@ -1,10 +1,11 @@
 <?php
 /*
 Plugin Name: Media Vault
-Text Domain: mgjp_mediavault
 Plugin URI: http://wordpress.org/plugins/media-vault/
 Description: Protect attachment files from direct access using powerful and flexible restrictions. Offer safe download links for any file in your uploads folder.
-Version: 0.7.1
+Text Domain: media-vault
+Domain Path: /languages
+Version: 0.8
 Author: Max GJ Panas
 Author URI: http://maxpanas.com
 License: GPLv3 or later
@@ -26,12 +27,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 
-/**
- * Load the plugin textdomain.
- *
- * @since 0.1
- */
-load_plugin_textdomain( 'mgjp_mediavault', false, plugin_dir_path( __FILE__ ) . 'languages/' );
+// define current plugin version constant
+define( 'MGJP_MV_VERSION', '0.8' );
 
 
 /**
@@ -40,14 +37,118 @@ load_plugin_textdomain( 'mgjp_mediavault', false, plugin_dir_path( __FILE__ ) . 
  * @since 0.1
  *
  * @param $path string path to attach to the end of protected folder dirname
+ * @param $in_url bool set to true if slash before protected folder dirname is desired
+ * @return string Media Vault protected upload folder relative to WP uploads folder
  */
-function mgjp_mv_upload_dir( $path = '' ) {
+function mgjp_mv_upload_dir( $path = '', $in_url = false ) {
 
-  $dirpath = '/_mediavault';
+  $dirpath = $in_url ? '/' : '';
+  $dirpath .= '_mediavault';
   $dirpath .= $path;
 
   return $dirpath;
 
+}
+
+
+/**
+ * Adds the default Media Vault place-holder image to the 
+ * Media Library and saves the id of the attachment created
+ * in the 'mgjp_mv_ir' option in the options table
+ *
+ * @since 0.8
+ *
+ * @return int the ID of the attachment that was created
+ * @return bool true on success
+ * @return bool false on failure to load image
+ */
+function mgjp_mv_load_placeholder_image( $restore_orig = false ) {
+
+  $ir = get_option( 'mgjp_mv_ir' );
+
+  // if placeholder image already exists return its attachment ID
+  if ( isset( $ir['id'] ) && wp_attachment_is_image( $ir['id'] ) && ! $restore_orig )
+    return $ir['id'];
+
+  // if original placeholder is loaded no need to
+  // reload it. Set it as placeholder and return its ID
+  if ( isset( $ir['default'] ) && wp_attachment_is_image( $ir['default'] ) ) {
+    $ir['id'] = $ir['default'];
+    update_option( 'mgjp_mv_ir', $ir );
+    return $ir['id'];
+  }
+
+  require_once( ABSPATH . 'wp-admin/includes/file.php' );
+  require_once( ABSPATH . 'wp-admin/includes/media.php' );
+  require_once( ABSPATH . 'wp-admin/includes/image.php' );
+
+  $tmp = download_url( plugins_url( 'imgs/media-vault-ir.jpg', __FILE__ ) );
+
+  if ( is_wp_error( $tmp ) ) {
+    @ unlink( $tmp );
+    return false;
+  }
+
+  $file_array = array(
+    'name'     => 'media-vault-ir.jpg',
+    'tmp_name' => $tmp
+  );
+
+  $post_data['post_date_gmt'] = $post_data['post_date'] = '1988-01-31 12:00:00';
+
+  $id = media_handle_sideload(
+    $file_array,
+    0,
+    __( 'Do Not Delete, Media Vault Place-holder Image' , 'media-vault' ),
+    $post_data
+  );
+
+  if ( is_wp_error( $id ) ) {
+    @ unlink( $tmp );
+    return false;
+  }
+
+  $ir['default'] = $id;
+  $ir['id'] = $id;
+
+  update_option( 'mgjp_mv_ir', $ir );
+
+  return $id;
+}
+
+
+/**
+ * Check if an attachment is protected with Media Vault.
+ *
+ * A file is protected by media vault if and only if 
+ * it is in the Media Vault Protected Directory within 
+ * the WordPress Uploads Directory.
+ * ( eg: wp-content/uploads/_mediavault/../filename.ext )
+ *
+ * If a file is in the protected directory and no permission
+ * meta is detected for the file, the default permission is 
+ * used to check if the user is allowed access.
+ *
+ * So to check if an attachment is protected by Media Vault we
+ * need to check whether its files are within the Media Vault
+ * Protected Directory.
+ *
+ * @since 0.8
+ *
+ * @uses mgjp_mv_upload_dir()
+ * @param $attachment_id int the id of the attachment we want to check
+ */
+function mgjp_mv_is_protected( $attachment_id ) {
+
+  // Get the base file path relative to the WordPress Uploads Directory
+  $file = get_post_meta( $attachment_id, '_wp_attached_file', true );
+
+  // Check if the path begins with the Media Vault Protected Directory
+  // Therefore check if the attachment's files are in the protected directory
+  if ( 0 === stripos( $file, mgjp_mv_upload_dir( '/' ) ) )
+    return true;
+
+  return false;
 }
 
 
@@ -61,29 +162,29 @@ function mgjp_mv_upload_dir( $path = '' ) {
 global $mgjp_mv_permissions;
 $mgjp_mv_permissions = array(
   'admin'     =>  array(
-                    'description'  => __( 'Admin users only', 'mgjp_mediavault' ),
-                    'select'       => __( 'Admin users', 'mgjp_mediavault' ),
+                    'description'  => __( 'Admin users only', 'media-vault' ),
+                    'select'       => __( 'Admin users', 'media-vault' ),
                     'logged_in'    => true,
                     'run_in_admin' => true,
                     'cb'           => 'mgjp_mv_check_admin_permission'
                   ),
   'author'    =>  array(
-                    'description'  => __( 'The file\'s author', 'mgjp_mediavault' ),
-                    'select'       => __( 'The file\'s author', 'mgjp_mediavault' ),
+                    'description'  => __( 'The file\'s author', 'media-vault' ),
+                    'select'       => __( 'The file\'s author', 'media-vault' ),
                     'logged_in'    => true,
                     'run_in_admin' => true,
                     'cb'           => 'mgjp_mv_check_author_permission'
                   ),
   'logged-in' =>  array(
-                    'description'  => __( 'All logged-in users', 'mgjp_mediavault' ),
-                    'select'       => __( 'Logged-in users', 'mgjp_mediavault' ),
+                    'description'  => __( 'All logged-in users', 'media-vault' ),
+                    'select'       => __( 'Logged-in users', 'media-vault' ),
                     'logged_in'    => true,
                     'run_in_admin' => false,
                     'cb'           => false
                   ),
   'all'       =>  array(
-                    'description'  => __( 'Anyone', 'mgjp_mediavault' ),
-                    'select'       => __( 'Anyone', 'mgjp_mediavault' ),
+                    'description'  => __( 'Anyone', 'media-vault' ),
+                    'select'       => __( 'Anyone', 'media-vault' ),
                     'logged_in'    => false,
                     'run_in_admin' => false,
                     'cb'           => false
@@ -97,7 +198,7 @@ $mgjp_mv_permissions = array(
  */
 function mgjp_mv_check_admin_permission() {
   if ( ! current_user_can( 'manage_options' ) )
-    return new WP_Error( 'not_admin', __( 'You do not have sufficient permissions to view this file.', 'mgjp_mediavault' ) );
+    return new WP_Error( 'not_admin', __( 'You do not have sufficient permissions to view this file.', 'media-vault' ) );
 
   return true;
 }
@@ -113,10 +214,10 @@ function mgjp_mv_check_author_permission( $attachment_id ) {
     return true;
 
   if ( ! isset( $attachment_id ) || empty( $attachment_id ) )
-    return new WP_Error( 'no_id', __( 'There was an error determining this attachment\'s author. Please contact the website administrator.', 'mgjp_mediavault' ) );
+    return new WP_Error( 'no_id', __( 'There was an error determining this attachment\'s author. Please contact the website administrator.', 'media-vault' ) );
 
   if ( get_current_user_id() != get_post_field( 'post_author', $attachment_id, 'raw' ) )
-    return new WP_Error( 'not_author', __( 'You do not have sufficient permissions to view this file.', 'mgjp_mediavault' ) );
+    return new WP_Error( 'not_author', __( 'You do not have sufficient permissions to view this file.', 'media-vault' ) );
 
   return true;
 }
@@ -130,11 +231,11 @@ function mgjp_mv_check_author_permission( $attachment_id ) {
  * @uses $mgjp_mv_permissions
  * @param $name string Name-id of the new permission, must be unique
  * @param $args array Array of arguments for permission must include:
- *                    'description' string Human readable short description of permission
- *                    'select' string Human readable very consice description of permission, used in option of select element
- *                    'logged_in' bool Whether the user must be at least logged in
- *                    'run_in_admin' bool Whether to run the permission check in WP Admin
- *                    'cb' string Function name to be called to evaluate file access permissions, false if no callback desired
+ *                    [description] string Human readable short description of permission
+ *                    [select] string Human readable very consice description of permission, used in option of select element
+ *                    [logged_in] bool Whether the user must be at least logged in
+ *                    [run_in_admin] bool Whether to run the permission check in WP Admin
+ *                    [cb] string Function name to be called to evaluate file access permissions, false if no callback desired
  *                                Function MUST return TRUE if access permitted to file and FALSE or WP_Error if access denied
  * @return bool false on failure, true on success
  */
@@ -183,27 +284,25 @@ function mgjp_mv_get_the_permissions() {
  *
  * @since 0.7
  *
+ * @uses mgjp_mv_is_protected()
  * @return bool false if attachment is not protected
  * @return string the permission name-id set for this attachment if it is protected
  */
-function mgjp_mv_get_the_permission( $attachment_id ) {
+function mgjp_mv_get_the_permission( $attachment_id, $meta_only = false ) {
 
-  if ( ! $meta = get_post_meta( $attachment_id, 'mgjp_mv_meta', true ) )
+  if ( ! mgjp_mv_is_protected( $attachment_id ) )
     return false;
 
-  if ( ! isset( $meta['is_protected'] ) || ! $meta['is_protected'] )
-    return false;
+  $permission = get_post_meta( $attachment_id, '_mgjp_mv_permission', true );
 
-  $permission = isset( $meta['permission'] ) && ! empty( $meta['permission'] ) ?
-                  $meta['permission'] :
-                  get_option( 'mgjp_mv_default_permission', 'logged-in' );
-
-  return $permission;
+  return empty( $permission ) && ! $meta_only ?
+          get_option( 'mgjp_mv_default_permission', 'logged-in' ) :
+          $permission;
 }
 
 /**
  * Check if the current user is permitted to access an attachment of a
- * specified ID within the WordPress Admin
+ * specified ID
  *
  * @since 0.7
  *
@@ -213,9 +312,9 @@ function mgjp_mv_get_the_permission( $attachment_id ) {
  * @return bool True if current user access permitted
  * @return bool False if current user access denied
  */
-function mgjp_mv_admin_check_user_permitted( $attachment_id ) {
+function mgjp_mv_check_user_permitted( $attachment_id ) {
 
-  // check if post is attachment & if it has protection and permissions set on it
+  // check if attachment has protection and permissions set on it
   if ( ! $permission = mgjp_mv_get_the_permission( $attachment_id ) )
     return true;
 
@@ -226,8 +325,12 @@ function mgjp_mv_admin_check_user_permitted( $attachment_id ) {
     return false; // it is better to fail safely than to reveal something we should not
 
   // check if permission check is set to need not run in admin
-  if ( isset( $permissions[$permission]['run_in_admin'] ) && ! $permissions[$permission]['run_in_admin'] )
+  if ( is_admin() && isset( $permissions[$permission]['run_in_admin'] ) && ! $permissions[$permission]['run_in_admin'] )
     return true;
+
+  // check if permission check is set to need the user to be logged in. if it is check if he is logged in
+  if ( ! isset( $permissions[$permission]['logged_in'] ) || ( $permissions[$permission]['logged_in'] && ! is_user_logged_in() ) )
+    return false;
 
   // check if permission callback is set to false
   if ( isset( $permissions[$permission]['cb'] ) && false === $permissions[$permission]['cb'] )
@@ -250,12 +353,152 @@ function mgjp_mv_admin_check_user_permitted( $attachment_id ) {
 
 
 /**
+ * Moves attachment files to Media Vault protected
+ * directory in the WP uploads folder
+ *
+ * @since 0.8
+ *
+ * @uses mgjp_move_attachment_files()
+ * @param $attachment_id int the id of the attachment whose files we want to move
+ * @return object WP_Error with error txt from mgjp_move_attachment_files() on failure
+ * @return bool true on success
+ */
+function mgjp_mv_move_attachment_to_protected( $attachment_id ) {
+
+  $file = get_post_meta( $attachment_id, '_wp_attached_file', true );
+
+  // check if files are already in the Media Vault protected folder
+  if ( 0 === stripos( $file, mgjp_mv_upload_dir( '/' ) ) )
+    return true;
+
+  $new_reldir = path_join( mgjp_mv_upload_dir(), dirname( $file ) );
+
+  include_once( plugin_dir_path( __FILE__ ) . 'includes/mgjp-functions.php' );
+
+  return mgjp_move_attachment_files( $attachment_id, $new_reldir );
+}
+
+/**
+ * Moves attachment files out of Media Vault protected
+ * directory in the WP uploads folder
+ *
+ * @since 0.8
+ *
+ * @uses mgjp_move_attachment_files()
+ * @param $attachment_id int the id of the attachment whose files we want to move
+ * @return object WP_Error with error txt from mgjp_mv_move_attachment_files() on failure
+ * @return bool true on move success
+ */
+function mgjp_mv_move_attachment_from_protected( $attachment_id ) {
+
+  $file = get_post_meta( $attachment_id, '_wp_attached_file', true );
+
+  // check if files are already not in the Media Vault protected folder
+  if ( 0 !== stripos( $file, mgjp_mv_upload_dir( '/' ) ) )
+    return true;
+
+  $new_reldir = ltrim( dirname( $file ), mgjp_mv_upload_dir( '/' ) );
+
+  include_once( plugin_dir_path( __FILE__ ) . 'includes/mgjp-functions.php' );
+
+  return mgjp_move_attachment_files( $attachment_id, $new_reldir );
+}
+
+
+/**
+ * Return attachment file download url
+ *
+ * @since 0.5
+ *
+ * @param $attachment_id int ID of attachment whose file download url we want
+ * @param $size string optional name-id of size of file if attachment is of type 'image'
+ * @return object WP_Error with error txt if file is not attachment
+ * @return string full filepath to attachment file of specified size with Media Vault force download
+ *                query parameter set
+ */
+function mgjp_mv_get_attachment_download_url( $attachment_id, $size = null ) {
+
+  if ( 'attachment' !== get_post_type( $attachment_id ) )
+    return new WP_Error( 'not_attachment', sprintf( __( 'The post type of the post with ID %d, is not %s.', 'media-vault' ), $attachment_id, '\'attachment\'' ) );
+
+  $query_arg = array( 'mgjp_mv_download' => 'safeforce' );
+
+  if ( ! wp_attachment_is_image( $attachment_id ) || ! isset( $size ) )
+    return add_query_arg( $query_arg, wp_get_attachment_url( $attachment_id ) );
+
+  $image = wp_get_attachment_image_src( $attachment_id, $size );
+
+  return add_query_arg( $query_arg, $image[0] );
+}
+
+
+/**
+ * Return plugin default options
+ *
+ * @since 0.4
+ *
+ * @uses apply_filters() provides hook to modify default plugin options
+ * @return array Array of Media Vault options
+ */
+function mgjp_mv_default_options() {
+
+  $options = array(
+    'default_upload_protection' => 'off' // possible values 'on' && 'off'
+  );
+
+  return apply_filters( 'mgjp_mv_default_options', $options );
+
+}
+
+
+/**
+ * Load the plugin textdomain.
+ *
+ * @since 0.1
+ */
+function mgjp_mv_textdomain() {
+
+  load_plugin_textdomain( 'media-vault', false, plugin_dir_path( __FILE__ ) . 'languages/' );
+
+}
+add_action( 'plugins_loaded', 'mgjp_mv_textdomain' );
+
+
+/**
+ * Plugin update handling. Checks current version against
+ * a version number stored in the database and performs any
+ * necessary upgrades using the MGJP_MV_Update class which
+ * extends the MGJP_Update class
+ *
+ * @since 0.8
+ *
+ * @uses MGJP_MV_Update
+ */
+function mgjp_mv_check_version() {
+
+  $option_key = 'mgjp_mv_version';
+
+  $version_db = get_site_option( $option_key, '0' );
+
+  if ( version_compare( $version_db, MGJP_MV_VERSION, 'ge' ) )
+    return;
+
+  include_once( plugin_dir_path( __FILE__ ) . 'mv-class-update.php' );
+
+  if ( class_exists( 'MGJP_MV_Update' ) )
+    new MGJP_MV_Update( $version_db, MGJP_MV_VERSION, $option_key );
+
+}
+add_action( 'init', 'mgjp_mv_check_version' );
+
+
+/**
  * Function for the 'user_has_cap' WP Core filter. Checks the permissions set
  * on an attachment before making it available to a user to edit/delete/read.
  *
  * @since 0.7
  *
- * @uses mgjp_mv_admin_check_user_permitted()
+ * @uses mgjp_mv_check_user_permitted()
  * @param $allcaps array Array of all user capabilities
  * @param $cap array  [0] string capability required
  * @param $args array [0] string capability requested
@@ -279,14 +522,82 @@ function mgjp_mv_edit_capabilities( $allcaps, $cap, $args ) {
     return $allcaps;
 
   // check if user is permitted to access the post
-  if ( mgjp_mv_admin_check_user_permitted( $args[2] ) )
+  if ( mgjp_mv_check_user_permitted( $args[2] ) )
     return $allcaps;
 
   $allcaps[$cap[0]] = false;
 
   return $allcaps;
 }
-add_filter( 'user_has_cap', 'mgjp_mv_edit_capabilities', 10, 3 );
+add_filter( 'user_has_cap', 'mgjp_mv_edit_capabilities', 999, 3 );
+
+
+/**
+ * Replace requested image with a Media Vault place-holder
+ * if the user is not permitted to view them
+ *
+ * @since 0.8
+ *
+ * @param $img mixed false based on wp-includes/media.php or array if other filter has affected it
+ * @param $attachment_id int ID of the attachment whose image is being requested
+ * @param $size string name-id of the dimensions of the requested image
+ * @return mixed return the $url if the image is not protected
+ * @return array [0] string URL to the Media Vault replacement image of the requested size
+ *               [1] string width of the Media Vault replacement image
+ *               [2] string height of the Media Vault replacement image
+ *               [3] bool whether the url is for a resized image or not
+ */
+function mgjp_mv_replace_protected_image( $img, $attachment_id, $size ) {
+
+  $ir = get_option( 'mgjp_mv_ir' );
+
+  if ( ! isset( $ir['is_on'] ) || ! $ir['is_on'] )
+    return $img;
+
+  $upload_dir = wp_upload_dir();
+
+  if ( isset( $img[0] ) && 0 !== strpos( ltrim( $img[0], $upload_dir['baseurl'] ), mgjp_mv_upload_dir( '/', true ) ) )
+    return $img;
+
+  if ( mgjp_mv_check_user_permitted( $attachment_id ) )
+    return $img;
+
+  if ( isset( $ir['id'] ) && ! mgjp_mv_is_protected( $ir['id'] ) ) {
+
+    remove_filter( 'image_downsize', 'mgjp_mv_replace_protected_image', 999, 3 );
+    $placeholder = wp_get_attachment_image_src( $ir['id'], $size );
+    add_filter( 'image_downsize', 'mgjp_mv_replace_protected_image', 999, 3 );
+
+    return $placeholder;
+
+  } else {
+
+    list( $width, $height ) = image_constrain_size_for_editor( 1024, 1024, $size );
+
+    return array(
+      plugins_url( 'imgs/media-vault-ir.jpg', __FILE__ ),
+      $width,
+      $height,
+      false
+    );
+
+  }
+}
+add_filter( 'image_downsize', 'mgjp_mv_replace_protected_image', 999, 3 );
+
+
+/**
+ * Include the Media Vault custom AJAX actions
+ *
+ * @since 0.8
+ */
+function mgjp_mv_ajax_actions_include() {
+
+  if ( defined( 'DOING_AJAX' ) && DOING_AJAX )
+    include_once( plugin_dir_path( __FILE__ ) . 'mv-ajax-actions.php' );
+
+}
+add_action( 'admin_init', 'mgjp_mv_ajax_actions_include', 0 );
 
 
 /**
@@ -357,7 +668,7 @@ add_action( 'admin_init', 'mgjp_mv_attachment_metabox_include' );
 function mgjp_mv_change_upload_directory( $param ) {
 
   if ( isset( $_POST['mgjp_mv_protected'] ) && 'on' == $_POST['mgjp_mv_protected'] ) {
-    $param['subdir'] = mgjp_mv_upload_dir( $param['subdir'] );
+    $param['subdir'] = mgjp_mv_upload_dir( $param['subdir'], true );
     $param['path']   = $param['basedir'] . $param['subdir'];
     $param['url']    = $param['baseurl'] . $param['subdir'];
   }
@@ -365,24 +676,6 @@ function mgjp_mv_change_upload_directory( $param ) {
   return $param;
 }
 add_filter( 'upload_dir', 'mgjp_mv_change_upload_directory', 999 );
-
-
-/**
- * Add plugin related metadata to media uploads
- * if the 'protected' post/get parameter has been set
- * during the upload process.
- *
- * @since 0.1
- *
- * @param $attachment_id int ID of attachment being created
- */
-function mgjp_mv_add_custom_media_meta( $attachment_id ) {
-
-  if ( ! is_wp_error( $attachment_id ) && isset( $_POST['mgjp_mv_protected'] ) && 'on' == $_POST['mgjp_mv_protected'] )
-    add_post_meta( $attachment_id, 'mgjp_mv_meta', array( 'is_protected' => true ) );
-
-}
-add_action( 'add_attachment', 'mgjp_mv_add_custom_media_meta' );
 
 
 /**
@@ -394,6 +687,7 @@ add_action( 'add_attachment', 'mgjp_mv_add_custom_media_meta' );
  * @uses mgjp_mv_get_file()
  */
 function mgjp_mv_handle_media_access_and_download() {
+
   if ( isset( $_GET['mgjp_mv_file'] ) && ! empty( $_GET['mgjp_mv_file'] ) ) {
 
     include( plugin_dir_path( __FILE__ ) . 'mv-file-handler.php' );
@@ -416,32 +710,6 @@ add_action( 'init', 'mgjp_mv_handle_media_access_and_download', 0 );
 
 
 /**
- * Return attachment file download url
- *
- * @since 0.5
- *
- * @param $attachment_id int ID of attachment whose file download url we want
- * @param $size string optional name-id of size of file if attachment is of type 'image'
- * @return string full filepath to attachment file of specified size with Media Vault force download
- *                query parameter set
- */
-function mgjp_mv_get_attachment_download_url( $attachment_id, $size = null ) {
-
-  if ( 'attachment' !== get_post_type( $attachment_id ) )
-    return new WP_Error( 'not_attachment', sprintf( __( 'The post type of the post with ID %d, is not %s.', 'mgjp_mediavault' ), $attachment_id, '\'attachment\'' ) );
-
-  $query_arg = array( 'mgjp_mv_download' => 'safeforce' );
-
-  if ( ! wp_attachment_is_image( $attachment_id ) || ! isset( $size ) )
-    return add_query_arg( $query_arg, wp_get_attachment_url( $attachment_id ) );
-
-  $image = wp_get_attachment_image_src( $attachment_id, $size );
-
-  return add_query_arg( $query_arg, $image[0] );
-}
-
-
-/**
  * Register Media Vault Shortcodes
  *
  * @since 0.5
@@ -450,7 +718,8 @@ function mgjp_mv_register_shortcodes() {
 
   include_once( plugin_dir_path( __FILE__ ) . 'mv-shortcodes.php' );
 
-  add_shortcode( 'mv_dl_links', 'mgjp_mv_download_links_list_shortcode_handler' );
+  if ( function_exists( 'mgjp_mv_download_links_list_shortcode_handler' ) )
+    add_shortcode( 'mv_dl_links', 'mgjp_mv_download_links_list_shortcode_handler' );
 
 }
 add_action( 'init', 'mgjp_mv_register_shortcodes' );
@@ -479,7 +748,7 @@ function mgjp_mv_add_plugin_rewrite_rules( $rules ) {
 
   $upload             = wp_upload_dir();
   $uploads_path       = str_replace( site_url( '/' ), '', $upload['baseurl'] );
-  $old_path_protected = $uploads_path . '(' . mgjp_mv_upload_dir( '/.*\.\w+)$' );
+  $old_path_protected = $uploads_path . '(' . mgjp_mv_upload_dir( '/.*\.\w+)$', true );
   $old_path_downloads = $uploads_path . '(.*\.\w+)$';
   $new_path           = $home_root . '?mgjp_mv_file=$1';
 
@@ -499,22 +768,24 @@ add_filter( 'mod_rewrite_rules', 'mgjp_mv_add_plugin_rewrite_rules' );
 
 
 /**
- * Return plugin default options
+ * Add Media Vault settings link on plugins manager page
  *
- * @since 0.4
+ * @since 0.8
  *
- * @uses apply_filters() provides hook to modify default plugin options
- * @return array Array of Media Vault options
+ * @param $links array Array of links associated with plugin
+ * @return array Array of links associated with plugin plus settings link
  */
-function mgjp_mv_default_options() {
+function mgjp_mv_settings_link( $links ) {
 
-  $options = array(
-    'default_upload_protection' => 'off' // possible values 'on' && 'off'
-  );
+  $settings_link = '<a href="options-media.php#uploads_use_yearmonth_folders">'
+    . esc_html__( 'Settings', 'media-vault' )
+    . '</a>';
 
-  return apply_filters( 'mgjp_mv_default_options', $options );
+  array_push( $links, $settings_link );
 
+  return $links;
 }
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'mgjp_mv_settings_link' );
 
 
 /**
@@ -526,10 +797,19 @@ function mgjp_mv_default_options() {
  */
 function mgjp_mv_activate() {
 
-  add_option( 'mgjp_mv_default_permission', 'logged-in', '', 'no' );
-  add_option( 'mgjp_mv_options', mgjp_mv_default_options(), '', 'no' );
+  // register Media Vault site-wide options
+  add_site_option( 'mgjp_mv_version', MGJP_MV_VERSION, '', 'yes' );
 
-  // Flush rewrite rules for private upload dir protection on plugin activation
+  // register Media Vault options to the local options table
+  add_option( 'mgjp_mv_default_permission', 'logged-in', '', 'yes' );
+
+  add_option( 'mgjp_mv_options', mgjp_mv_default_options(), '', 'no' );
+  add_option( 'mgjp_mv_ir', array( 'is_on' => true ), '', 'no' );
+
+  mgjp_mv_load_placeholder_image();
+
+  // Flush rewrite rules to add Media Vault rewrite rules to the
+  // site's .htaccess file on plugin activation
   add_filter( 'mod_rewrite_rules', 'mgjp_mv_add_plugin_rewrite_rules' );
   flush_rewrite_rules();
 }
@@ -543,12 +823,13 @@ register_activation_hook( __FILE__, 'mgjp_mv_activate' );
  */
 function mgjp_mv_deactivate() {
 
-  delete_option( 'mgjp_mv_default_permission' );
-  delete_option( 'mgjp_mv_options' );
+  // unload default placeholder image if it exists
+  $ir = get_option( 'mgjp_mv_ir' );
+  if ( isset( $ir['default'] ) && wp_attachment_is_image( $ir['default'] ) )
+    wp_delete_attachment( $ir['default'], true );
 
-  delete_post_meta_by_key( 'mgjp_mv_meta' );
-
-  // Flush rewrite rules on plugin deactivation
+  // Flush rewrite rules to remove Media Vault rewrite rules from the
+  // site's .htaccess file on plugin deactivation
   remove_filter( 'mod_rewrite_rules', 'mgjp_mv_add_plugin_rewrite_rules' );
   flush_rewrite_rules();
 }

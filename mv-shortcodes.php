@@ -40,7 +40,7 @@ function mgjp_mv_download_links_list_shortcode_handler( $atts ) {
 
   foreach ( $ids as $key => $id ) {
 
-    if ( ! absint( $id ) )
+    if ( ! absint( $id ) || ! mgjp_mv_check_user_permitted( $id ) )
       continue;
 
     $size = $sizes[0];
@@ -62,7 +62,7 @@ function mgjp_mv_download_links_list_shortcode_handler( $atts ) {
 
   if ( ! isset( $files[1] ) ) : ?>
 
-    <a href="<?php echo esc_attr( $files[0][1] ) ?>" download="<?php echo esc_attr( basename( $files[0][0] ) ); ?>" title="<?php echo esc_html__( 'Click to Download:', 'mgjp_mediavault' ), ' ', get_the_title( $files[0][0] ); ?>">
+    <a href="<?php echo esc_attr( $files[0][1] ) ?>" download="<?php echo esc_attr( basename( $files[0][0] ) ); ?>" title="<?php echo esc_html__( 'Click to Download:', 'media-vault' ), ' ', get_the_title( $files[0][0] ); ?>">
       <?php echo get_the_title( $files[0][0] ); ?>
     </a>
 
@@ -72,7 +72,7 @@ function mgjp_mv_download_links_list_shortcode_handler( $atts ) {
       <?php foreach ( $files as $file ) : ?>
 
         <li>
-          <a href="<?php echo esc_attr( $file[1] ) ?>" download="<?php echo esc_attr( basename( $file[1] ) ); ?>" title="<?php echo esc_html__( 'Click to Download:', 'mgjp_mediavault' ), ' ', get_the_title( $file[0] ); ?>">
+          <a href="<?php echo esc_attr( $file[1] ) ?>" download="<?php echo esc_attr( basename( $file[1] ) ); ?>" title="<?php echo esc_html__( 'Click to Download:', 'media-vault' ), ' ', get_the_title( $file[0] ); ?>">
             <?php echo get_the_title( $file[0] ); ?>
           </a>
         </li>

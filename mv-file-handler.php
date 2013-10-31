@@ -57,18 +57,31 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
   // check if file is protected by checking
   // if it is in the protected folder before
   // doing any permission checks
-  if ( 0 === stripos( $file_info['dirname'], mgjp_mv_upload_dir() ) ) {
+  if ( 0 === stripos( $file_info['dirname'], mgjp_mv_upload_dir( '/', true ) ) ) {
 
-    // get attachment id from url -----//
+    // disable caching of this page by caching plugins ------//
+    if ( ! defined( 'DONOTCACHEPAGE' ) )
+      define( 'DONOTCACHEPAGE', 1 );
+
+    if ( ! defined( 'DONOTCACHEOBJECT' ) )
+      define( 'DONOTCACHEOBJECT', 1 );
+
+    if ( ! defined( 'DONOTMINIFY' ) )
+      define( 'DONOTMINIFY', 1 );
+
+    //-------------------------------------------------------//
+
+    // try and get attachment id from url -------------------//
     global $wpdb;
     $attachments = $wpdb->get_results(
       $wpdb->prepare(
         "
         SELECT      post_id, meta_value
         FROM        $wpdb->postmeta
-        WHERE       meta_key = '_wp_attachment_metadata'
+        WHERE       meta_key = %s
                     AND meta_value LIKE %s
         ",
+        '_wp_attachment_metadata',
         '%' . $file_info['basename'] . '%'
       ), ARRAY_A
     );
@@ -83,29 +96,25 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
         break;
       }
     }
-    // --------------------------------//
+    // ------------------------------------------------------//
 
-    if ( false !== $attachment_id )
-      $dd_meta = get_post_meta( $attachment_id, 'mgjp_mv_meta', true );
-
-    $permission = isset( $dd_meta['permission'] ) && ! empty( $dd_meta['permission'] ) ?
-                    $dd_meta['permission'] :
-                    get_option( 'mgjp_mv_default_permission', 'logged-in' );
+    if ( ! $permission = mgjp_mv_get_the_permission( $attachment_id ) )
+      $permission = get_option( 'mgjp_mv_default_permission', 'logged-in' );
 
     $permissions = mgjp_mv_get_the_permissions();
 
     // permission set up error detection
-    $standard_error_txt = ' ' . __( 'Therefore for safety and privacy reasons this file is unavailable. Please contact the website administrator.', 'mgjp_mediavault' );
+    $standard_error_txt = ' ' . __( 'Therefore for safety and privacy reasons this file is unavailable. Please contact the website administrator.', 'media-vault' );
 
     if ( ! isset( $permissions[$permission] ) )
-      wp_die( __( 'The permissions set for this file are not recognized.', 'mgjp_mediavault' ) . $standard_error_txt );
+      wp_die( __( 'The permissions set for this file are not recognized.', 'media-vault' ) . $standard_error_txt );
 
     if ( ! isset( $permissions[$permission]['logged_in'] ) )
       $errors[] = 'logged_in';
     if ( ! isset( $permissions[$permission]['cb'] ) )
       $errors[] = 'cb';
     if ( isset( $errors ) ) {
-      $error_txt = __( 'The permissions set for this file have left the following important parameters undefined:', 'mgjp_mediavault' )
+      $error_txt = __( 'The permissions set for this file have left the following important parameters undefined:', 'media-vault' )
                   . '<ul><li>\'' . implode( '\'</li><li>\'', $errors ) . '\'</li></ul>'
                   . '<p>' . $standard_error_txt . '</p>';
       wp_die( $error_txt );
@@ -117,7 +126,7 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
     if ( false !== $permissions[$permission]['cb'] ) {
 
       if ( ! is_callable( $permissions[$permission]['cb'] ) )
-        wp_die( __( 'The permission checking function set in this file\'s permissions is not callable.', 'mgjp_mediavault' ) . $standard_error_txt );
+        wp_die( __( 'The permission checking function set in this file\'s permissions is not callable.', 'media-vault' ) . $standard_error_txt );
 
       $permission_check = call_user_func_array( $permissions[$permission]['cb'], array( $attachment_id, $rel_file, $file ) );
 
@@ -125,7 +134,7 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
         wp_die( $permission_check->get_error_message() . $standard_error_txt );
 
       if ( true !== $permission_check )
-        wp_die( __( 'You do not have sufficient permissions to view this file.', 'mgjp_mediavault' ) . $standard_error_txt );
+        wp_die( __( 'You do not have sufficient permissions to view this file.', 'media-vault' ) . $standard_error_txt );
     }
 
   } // end of permission checks

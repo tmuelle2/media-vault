@@ -18,7 +18,7 @@
  *
  * @since 0.7
  *
- * @uses mgjp_mv_admin_check_user_permitted() returns true if user is permitted to access
+ * @uses mgjp_mv_check_user_permitted() returns true if user is permitted to access
  *                                            specified attachment
  * @param $actions array Array of row actions available for specific attachment
  * @param $post object WP_Post object of currently rendering attachment
@@ -28,10 +28,10 @@
 function mgjp_mv_modify_media_library_row_actions( $actions, $post ) {
 
   // check if current user is permitted to access the post
-  if ( mgjp_mv_admin_check_user_permitted( $post->ID ) )
-    return $actions;
+  if ( ! mgjp_mv_check_user_permitted( $post->ID ) )
+    return array( __( 'You do not have permission to access this attachment', 'media-vault' ) );
 
-  return array();
+  return $actions;
 }
 add_filter( 'media_row_actions', 'mgjp_mv_modify_media_library_row_actions', 10, 2 );
 
@@ -46,7 +46,9 @@ add_filter( 'media_row_actions', 'mgjp_mv_modify_media_library_row_actions', 10,
  * @return array Array of columns, including custom column, for WP Media List Table
  */
 function mgjp_mv_register_media_library_custom_column( $columns ) {
-  $columns['mgjp_mv_info'] = __( 'Media Vault', 'mgjp_mediavault' );
+
+  $columns['mgjp_mv_info'] = __( 'Media Vault', 'media-vault' );
+
   return $columns;
 }
 add_filter( 'manage_upload_columns', 'mgjp_mv_register_media_library_custom_column' );
@@ -66,37 +68,30 @@ function mgjp_mv_render_media_library_custom_column( $column_name, $post_id ) {
   if ( 'mgjp_mv_info' != $column_name )
     return;
 
-  $meta = get_post_meta( $post_id, 'mgjp_mv_meta', true );
+  if ( ! $permission = mgjp_mv_get_the_permission( $post_id ) )
+    return;
 
-  if ( ! empty( $meta ) && $meta['is_protected'] ) {
+  $permissions = mgjp_mv_get_the_permissions();
 
-    $permissions = mgjp_mv_get_the_permissions();
+  $permission = isset( $permissions[$permission] ) ? $permissions[$permission] : '';
 
-    echo '<em>', esc_html__( 'Protected Media', 'mgjp_mediavault' ), '</em>';
+  $description = isset( $permission['description'] ) && ! empty( $permission['description'] ) ?
+                  esc_html( $permission['description'] ) :
+                  '<span class="mgjp-mv-error">'
+                  . esc_html__( 'Undetermined! Permissions have been misconfigured for this attachment!', 'media-vault' )
+                  . '</span>'; ?>
 
-    $permission = isset( $meta['permission'] ) && ! empty( $meta['permission'] ) ?
-                    $meta['permission'] :
-                    get_option( 'mgjp_mv_default_permission', 'logged-in' );
+    <em><?php esc_html_e( 'Protected Media', 'media-vault' ); ?></em>
 
-    $permission = isset( $permissions[$permission] ) ? $permissions[$permission] : '';
+    <p>
 
-    $description = isset( $permission['description'] ) && ! empty( $permission['description'] ) ?
-                    esc_html( $permission['description'] ) :
-                    '<span class="mgjp-mv-error">'
-                    . esc_html__( 'Undetermined! Permissions have been misconfigured for this attachment!', 'mgjp_mediavault' )
-                    . '</span>';
-    ?>
+      <div><?php esc_html_e( 'Files accessible to:', 'media-vault' ); ?></div>
 
-      <p>
+      <em><?php echo $description; ?></em>
 
-        <div><?php esc_html_e( 'Files accessible to:', 'mgjp_mediavault' ); ?></div>
+    </p>
 
-        <em><?php echo $description; ?></em>
-
-      </p>
-
-    <?php
-  }
+  <?php
 }
 add_action( 'manage_media_custom_column', 'mgjp_mv_render_media_library_custom_column', 10, 2 );
 
@@ -133,9 +128,9 @@ function mgjp_mv_add_media_library_bulk_actions_js() {
 
   $bulk_actions = array();
   if ( ! isset( $_GET['mgjp-mv-show-protected'] ) ) // hide action on 'Show Protected' media library page
-    $bulk_actions['mgjp-mv-protect'] = __( 'Add to Protected', 'mgjp_mediavault' );
+    $bulk_actions['mgjp-mv-protect'] = __( 'Add to Protected', 'media-vault' );
   if ( ! isset( $_GET['mgjp-mv-show-unprotected'] ) ) // hide action on 'Show Unprotected' media library page
-    $bulk_actions['mgjp-mv-unprotect'] = __( 'Remove from Protected', 'mgjp_mediavault' );
+    $bulk_actions['mgjp-mv-unprotect'] = __( 'Remove from Protected', 'media-vault' );
 
   ?>
 
@@ -174,10 +169,10 @@ function mgjp_mv_add_media_library_admin_notices() {
           'Media file is now protected.',       //singular
           '%s media files are now protected.',  //plural
           $_REQUEST['mgjp-mv-protected'],
-          'mgjp_mediavault'
+          'media-vault'
         ), number_format_i18n( $_REQUEST['mgjp-mv-protected'] )
       );
-      echo '<div class="updated"><p>' . $message . '</p></div>';
+      echo '<div class="updated"><p>' . esc_html( $message ) . '</p></div>';
       $_SERVER['REQUEST_URI'] = remove_query_arg( 'mgjp-mv-protected', $_SERVER['REQUEST_URI'] );
     }
 
@@ -187,10 +182,10 @@ function mgjp_mv_add_media_library_admin_notices() {
           'Removed file protection on media file.',       //singular
           'Removed file protection on %s media files.',   //plural
           $_REQUEST['mgjp-mv-unprotected'],
-          'mgjp_mediavault'
+          'media-vault'
         ), number_format_i18n( $_REQUEST['mgjp-mv-unprotected'] )
       );
-      echo '<div class="updated"><p>' . $message . '</p></div>';
+      echo '<div class="updated"><p>' . esc_html( $message ) . '</p></div>';
       $_SERVER['REQUEST_URI'] = remove_query_arg( 'mgjp-mv-unprotected', $_SERVER['REQUEST_URI'] );
     }
 
@@ -235,31 +230,21 @@ switch( $action ) {
 
   case 'mgjp-mv-protect':
     if ( ! current_user_can( 'edit_posts' ) )
-      wp_die( __( 'You are not allowed to add attachments to the protected directory.', 'mgjp_mediavault' ) );
+      wp_die( __( 'You are not allowed to add attachments to the protected directory.', 'media-vault' ) );
 
     $protected = 0;
     foreach ( (array) $media_ids as $media_id ) {
+
       if ( ! current_user_can( 'edit_post', $media_id ) )
         continue;
 
-      // check if file is already protected
-      $meta = get_post_meta( $media_id, 'mgjp_mv_meta', true );
-      if ( ! empty( $meta ) && $meta['is_protected'] )
+      if ( mgjp_mv_is_protected( $media_id ) )
         continue;
 
-      $file = get_post_meta( $media_id, '_wp_attached_file', true );
+      $move = mgjp_mv_move_attachment_to_protected( $media_id );
 
-      $new_reldir = path_join(
-        ltrim( mgjp_mv_upload_dir(), '/' ),
-        dirname( $file )
-      );
-
-      $move = mgjp_move_attachment_files( $media_id, $new_reldir );
       if ( is_wp_error( $move ) )
-        wp_die( __( 'There was an error moving the files to the protected directory.', 'mgjp_mediavault' ) . '<br/>' .  $move->get_error_message() );
-
-      $meta['is_protected'] = true;
-      update_post_meta( $media_id, 'mgjp_mv_meta', $meta );
+        wp_die( __( 'There was an error moving the files to the protected directory.', 'media-vault' ) . '<br/>' .  $move->get_error_message() );
 
       $protected++;
     }
@@ -272,31 +257,23 @@ switch( $action ) {
 
   case 'mgjp-mv-unprotect':
     if ( ! current_user_can( 'edit_posts' ) )
-      wp_die( __( 'You are not allowed to remove attachments from the protected directory.', 'mgjp_mediavault' ) );
+      wp_die( __( 'You are not allowed to remove attachments from the protected directory.', 'media-vault' ) );
 
     $unprotected = 0;
     foreach ( (array) $media_ids as $media_id ) {
+
       if ( ! current_user_can( 'edit_post', $media_id ) )
         continue;
 
-      // make sure file is not protected
-      $meta = get_post_meta( $media_id, 'mgjp_mv_meta', true );
-      if ( empty( $meta ) || ! $meta['is_protected']  )
+      if ( ! mgjp_mv_is_protected( $media_id ) )
         continue;
 
-      $file = get_post_meta( $media_id, '_wp_attached_file', true );
+      $move = mgjp_mv_move_attachment_from_protected( $media_id );
 
-      $new_reldir = ltrim(
-        dirname( $file ),
-        ltrim( mgjp_mv_upload_dir( '/' ), '/' )
-      );
-
-      $move = mgjp_move_attachment_files( $media_id, $new_reldir );
       if ( is_wp_error( $move ) )
-        wp_die( __( 'There was an error moving the files from the protected directory.', 'mgjp_mediavault' ) . '<br/>' .  $move->get_error_message() );
-        
-      $meta['is_protected'] = false;
-      update_post_meta( $media_id, 'mgjp_mv_meta', $meta );
+        wp_die( __( 'There was an error moving the files from the protected directory.', 'media-vault' ) . '<br/>' .  $move->get_error_message() );
+
+      delete_post_meta( $media_id, '_mgjp_mv_permission' );
 
       $unprotected++;
     }

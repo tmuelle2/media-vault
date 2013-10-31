@@ -13,7 +13,7 @@
 /** Register custom metabox **/
 add_meta_box(
   'mgjp_mv_protection_metabox',
-  __( 'Media Vault Protection Settings', 'mgjp_mediavault' ),
+  __( 'Media Vault Protection Settings', 'media-vault' ),
   'mgjp_mv_render_attachment_protection_metabox',
   'attachment',
   'side'
@@ -33,29 +33,28 @@ add_meta_box(
 function mgjp_mv_render_attachment_protection_metabox( $post ) {
 
   // enqueue metabox styles
-  wp_enqueue_style( 'mgjp-mv-attachment-edit-styles', plugin_dir_url( __FILE__ ) . 'css/mv-attachment-edit.css', 'screen', null );
+  wp_enqueue_style( 'mgjp-mv-attachment-edit-styles', plugins_url( 'css/mv-attachment-edit.css', __FILE__ ), 'all', null );
+
 
   wp_nonce_field( 'mgjp_mv_protection_metabox', 'mgjp_mv_protection_metabox_nonce' );
 
-  $permission = mgjp_mv_get_the_permission( $post->ID );
 
-  // if permission is not === false here attachment files are protected
-  $protected = ! ! $permission;
+  $permission = get_post_meta( $post->ID, '_mgjp_mv_permission', true );
 
   $permissions = mgjp_mv_get_the_permissions();
 
-  if ( ! isset( $permissions[$permission] ) )
-    $permission = get_option( 'mgjp_mv_default_permission', 'logged-in' ); ?>
+  if ( empty( $permission ) || ! isset( $permissions[$permission] ) )
+    $permission = 'default'; ?>
 
   <input type="hidden" name="mgjp_mv_protection_toggle" value="off">
-  <input type="checkbox" id="mgjp_mv_protection_toggle" name="mgjp_mv_protection_toggle" <?php checked( $protected ); ?>>
+  <input type="checkbox" id="mgjp_mv_protection_toggle" name="mgjp_mv_protection_toggle" <?php checked( mgjp_mv_is_protected( $post->ID ) ); ?>>
 
   <label class="mgjp-mv-protection-toggle" for="mgjp_mv_protection_toggle">
 
-    <span aria-role="hidden" class="mgjp-on button button-primary" data-mgjp-content="<?php esc_attr_e( 'Add to Protected', 'mgjp_mediavault' ); ?>"></span>
-    <span aria-role="hidden" class="mgjp-off" data-mgjp-content="<?php esc_attr_e( 'Remove from Protected', 'mgjp_mediavault' ); ?>"></span>
+    <span aria-role="hidden" class="mgjp-on button button-primary" data-mgjp-content="<?php esc_attr_e( 'Add to Protected', 'media-vault' ); ?>"></span>
+    <span aria-role="hidden" class="mgjp-off" data-mgjp-content="<?php esc_attr_e( 'Remove from Protected', 'media-vault' ); ?>"></span>
 
-    <span class="visuallyhidden"><?php esc_html_e( 'Protect this attachment\'s files with Media Vault.', 'mgjp_mediavault' ); ?></span>
+    <span class="visuallyhidden"><?php esc_html_e( 'Protect this attachment\'s files with Media Vault.', 'media-vault' ); ?></span>
 
   </label>
 
@@ -63,11 +62,15 @@ function mgjp_mv_render_attachment_protection_metabox( $post ) {
 
     <label for="mgjp_mv_permission_select">
 
-      <span class="description"><?php esc_html_e( 'File access permission', 'mgjp_mediavault' ); ?></span>
+      <span class="description"><?php esc_html_e( 'File access permission', 'media-vault' ); ?></span>
 
     </label>
 
-    <select id="mgjp_mv_per/mission_select" name="mgjp_mv_permission_select">
+    <select id="mgjp_mv_permission_select" name="mgjp_mv_permission_select">
+
+      <option value="default" <?php selected( $permission, 'default' ); ?>>
+        <?php esc_html_e( 'Use Default Setting', 'media-vault' ); ?>
+      </option>
 
       <?php foreach ( $permissions as $key => $data ) : ?>
 
@@ -99,7 +102,7 @@ function mgjp_mv_render_attachment_protection_metabox( $post ) {
 function mgjp_mv_save_attachment_metabox_data() {
 
   global $post;
-  $post_id = $post->ID;
+  $attachment_id = $post->ID;
 
   if( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE )
     return;
@@ -107,84 +110,53 @@ function mgjp_mv_save_attachment_metabox_data() {
   if( ! isset( $_POST['mgjp_mv_protection_metabox_nonce'] ) || ! wp_verify_nonce( $_POST['mgjp_mv_protection_metabox_nonce'], 'mgjp_mv_protection_metabox' ) ) 
     return;
 
-  if( ! current_user_can( 'edit_post', $post_id ) )
+  if( ! current_user_can( 'edit_post', $attachment_id ) )
     return;
 
 
   if ( ! isset( $_POST['mgjp_mv_protection_toggle'] ) )
     return;
 
-  if ( $_POST['mgjp_mv_protection_toggle'] == 'on' ) {
+  switch ( $_POST['mgjp_mv_protection_toggle'] ) {
 
-    $meta = get_post_meta( $post_id, 'mgjp_mv_meta', true );
-
-    if ( ! isset( $meta['is_protected'] ) || ! $meta['is_protected'] ) {
-
-      $file = get_post_meta( $post_id, '_wp_attached_file', true );
-
-      $new_reldir = path_join(
-        ltrim( mgjp_mv_upload_dir(), '/' ),
-        dirname( $file )
-      );
-
-      include( plugin_dir_path( __FILE__ ) . 'includes/mgjp-functions.php' );
-
+    case 'off' :
       remove_action( 'edit_attachment', 'mgjp_mv_save_attachment_metabox_data' );
 
-      $move = mgjp_move_attachment_files( $post_id, $new_reldir );
+      $move = mgjp_mv_move_attachment_from_protected( $attachment_id );
 
       add_action( 'edit_attachment', 'mgjp_mv_save_attachment_metabox_data' );
 
       if ( is_wp_error( $move ) )
         return;
 
-    }
+      delete_post_meta( $attachment_id, '_mgjp_mv_permission' );
 
-    $meta['is_protected'] = true;
-
-    $meta['permission'] = isset( $_POST['mgjp_mv_permission_select'] ) && ! empty( $_POST['mgjp_mv_permission_select'] ) ?
-                            $_POST['mgjp_mv_permission_select'] :
-                            get_option( 'mgjp_mv_default_permission', 'logged-in' );
-
-  } else if ( $_POST['mgjp_mv_protection_toggle'] == 'off' ) {
-
-    $meta = get_post_meta( $post_id, 'mgjp_mv_meta', true );
-
-    if ( ! isset( $meta['is_protected'] ) || ! $meta['is_protected'] )
       return;
 
-    if ( isset( $meta['is_protected'] ) && $meta['is_protected'] ) {
-
-      $file = get_post_meta( $post_id, '_wp_attached_file', true );
-
-      $new_reldir = ltrim(
-        dirname( $file ),
-        ltrim( mgjp_mv_upload_dir( '/' ), '/' )
-      );
-
-      include( plugin_dir_path( __FILE__ ) . 'includes/mgjp-functions.php' );
-
+    case 'on':
       remove_action( 'edit_attachment', 'mgjp_mv_save_attachment_metabox_data' );
 
-      $move = mgjp_move_attachment_files( $post_id, $new_reldir );
+      $move = mgjp_mv_move_attachment_to_protected( $attachment_id );
 
       add_action( 'edit_attachment', 'mgjp_mv_save_attachment_metabox_data' );
 
       if ( is_wp_error( $move ) )
         return;
-    }
 
-    $meta['is_protected'] = false;
+      if ( ! isset( $_POST['mgjp_mv_permission_select'] ) || empty( $_POST['mgjp_mv_permission_select'] ) )
+        return;
+      
+      $permissions = mgjp_mv_get_the_permissions();  
 
-    if ( isset( $meta['permission'] ) )
-      unset( $meta['permission'] );
+      if ( 'default' == $_POST['mgjp_mv_permission_select'] || ! isset( $permissions[$_POST['mgjp_mv_permission_select']] ) )
+        delete_post_meta( $attachment_id, '_mgjp_mv_permission' );
+      else
+        update_post_meta( $attachment_id, '_mgjp_mv_permission', $_POST['mgjp_mv_permission_select'] );
 
+      return;
+
+    default: return;
   }
-
-  if ( ! isset( $meta ) )
-    return;
-
-  update_post_meta( $post_id, 'mgjp_mv_meta', $meta );
 }
 add_action( 'edit_attachment', 'mgjp_mv_save_attachment_metabox_data' );
 

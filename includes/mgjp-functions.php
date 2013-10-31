@@ -63,13 +63,13 @@ if ( ! function_exists( 'mgjp_move_attachment_files' ) ) {
     // basic sanity checks
     if ( 'attachment' != get_post_type( $attachment_id ) )
       return new WP_Error( 'not_attachment', sprintf(
-        __( 'The post with ID: %d is not an attachment post type.', 'mgjp_mediavault' ),
+        __( 'The post with ID: %d is not an attachment post type.', 'media-vault' ),
         $attachment_id
       ) );
 
     if ( path_is_absolute( $new_reldir ) )
       return new WP_Error( 'new_reldir_not_relative', sprintf(
-        __( 'The new path provided: %s is absolute. The new path must be a path relative to the WP uploads directory.', 'mgjp_mediavault' ),
+        __( 'The new path provided: %s is absolute. The new path must be a path relative to the WP uploads directory.', 'media-vault' ),
         $new_relpath
       ) );
 
@@ -101,7 +101,7 @@ if ( ! function_exists( 'mgjp_move_attachment_files' ) ) {
     // otherwise create it, while setting appropriate permissions.
     if ( ! wp_mkdir_p( $new_fulldir ) )
       return new WP_Error( 'wp_mkdir_p_error', sprintf(
-        __( 'There was an error making or verifying the directory at: %s', 'mgjp_mediavault' ),
+        __( 'There was an error making or verifying the directory at: %s', 'media-vault' ),
         $new_fulldir
       ) );
 
@@ -195,7 +195,7 @@ if ( ! function_exists( 'mgjp_move_attachment_files' ) ) {
         return new WP_Error(
           'rename_failed',
           sprintf(
-            __( 'Rename failed when trying to move file from: %s, to: %s', 'mgjp_mediavault' ),
+            __( 'Rename failed when trying to move file from: %s, to: %s', 'media-vault' ),
             $old_fullpath,
             $new_fullpath
           )

@@ -19,7 +19,7 @@ function mgjp_mv_media_new_options_css() {
 
   $screen = get_current_screen();
   if ( 'media' == $screen->base && 'add' == $screen->action )
-    wp_enqueue_style( 'mgjp-mv-media-new-styles', plugin_dir_url( __FILE__ ) . 'css/mv-media-new.css', 'screen', null );
+    wp_enqueue_style( 'mgjp-mv-media-new-styles', plugins_url( 'css/mv-media-new.css', __FILE__ ), 'all', null );
 
 }
 add_action( 'admin_enqueue_scripts', 'mgjp_mv_media_new_options_css' );
@@ -86,7 +86,7 @@ function mgjp_mv_render_media_new_options() {
 
           <th scope="row">
             <label for="mgjp_mv_protected">
-              <?php esc_html_e( 'Protect Media Uploads', 'mgjp_mediavault' ); ?>
+              <?php esc_html_e( 'Protect Media Uploads', 'media-vault' ); ?>
             </label>
           </th>
 
@@ -99,7 +99,7 @@ function mgjp_mv_render_media_new_options() {
               <input type="checkbox" id="mgjp_mv_protected" name="mgjp_mv_protected" <?php if ( isset( $options['default_upload_protection'] ) ) checked( $options['default_upload_protection'], 'on' ); ?>>
 
               <span class="description">
-                <?php esc_html_e( 'Tick this box to save media uploads in a protected folder.', 'mgjp_mediavault' ); ?>
+                <?php esc_html_e( 'Tick this box to save media uploads in a protected folder.', 'media-vault' ); ?>
               </span>
 
             </label>
@@ -128,8 +128,8 @@ function mgjp_mv_render_media_new_options_message_box() {
 
     <div class="mgjp-mv-tag">
       <span aria-role="hidden" class="mgjp-mv-tag-icon"></span>
-      <?php echo esc_html( _ex( 'New Uploads are', 'as in: Uploads are now Protected', 'mgjp_mediavault' ) ); ?>
-      <strong><?php echo esc_html( _ex( 'Protected', 'as in: Uploads are now Protected', 'mgjp_mediavault' ) ); ?></strong>
+      <?php echo esc_html( _ex( 'New Uploads are', 'as in: Uploads are now Protected', 'media-vault' ) ); ?>
+      <strong><?php echo esc_html( _ex( 'Protected', 'as in: Uploads are now Protected', 'media-vault' ) ); ?></strong>
     </div>
 
   <?php endif;

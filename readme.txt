@@ -2,8 +2,8 @@
 Contributors: Max GJP
 Donate Link:
 Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images
-Requires at least: 3.2.0
-Tested up to: 3.6.2
+Requires at least: 3.5.0
+Tested up to: 3.7.1
 Stable tag: 0.7.1
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -11,12 +11,6 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
 Protect attachment files from direct access using powerful and flexible restrictions. Offer safe download links for any file in your uploads folder.
 
 == Description ==
-
-When you upload a file in WordPress, that file gets saved into your WordPress uploads folder on your server and an attachment post type is created for you so that you can use it in your website. By default, the attachment's files saved on your server are not protected in any way, and anyone can type in their address and directly access or download them.
-
-Now let's say you create a Private Post which you only want to share with certain people. WordPress let's you do this with the Password Protect feature. However if that post contains sensitive attachment files such as images, video, pdfs, etc. those attachments' files are not protected in any way and anyone that has or can obtain the addresses to these files can easily just directly access them and view or download them to their heart's content.
-
-**That is where Media Vault steps in.**
 
 = Protected Attachment Files =
 
@@ -43,6 +37,8 @@ where 'ids' are the comma separated list of attachment ids you would like to mak
 
 *Note:* Plugin comes with styles ready for WordPress [mp6](http://wordpress.org/plugins/mp6)!
 
+*Note:* Plugin requires [Pretty Permalinks](http://codex.wordpress.org/Using_Permalinks#Using_.22Pretty.22_permalinks) to be enabled in your WordPress installation.
+
 == Installation ==
 
 = Install Through your Blog's Admin =
@@ -66,7 +62,9 @@ where 'ids' are the comma separated list of attachment ids you would like to mak
 
 = How do I toggle File Protection on an existing Attachment =
 
-The plugin comes with two bulk actions that can be performed in the Media Library page in the WordPress Admin. On the Media Library page select the attachment or attachments you would like to manipulate by ticking the box next to their title. Then from the 'bulk options' dropdown select either the 'Add to Protected' or 'Remove from Protected' option and click the 'Apply' button next to the dropdown.
+You have two options. If you only want to toggle File Protection on **a single attachment**, you can do it directly from the attachment's Edit page. In the 'Media Vault Settings' metabox in the right column, you can toggle protection by clicking the button that will either say 'Add to Protected' or 'Remove from Protected'. Remember to click 'Update' to save the changes you have made.
+
+If you want to toggle File Protection on **multiple attachments**, the plugin comes with two bulk actions that can be performed in the Media Library page in the WordPress Admin. On the Media Library page select the attachment or attachments you would like to manipulate by ticking the box next to their title. Then from the 'bulk options' dropdown select either the 'Add to Protected' or 'Remove from Protected' option and click the 'Apply' button next to the dropdown.
 
 You can verify that the action took effect by looking at the Media Vault column in the Media Library list table. It will display when an attachment's files are protected as well as the permissions set on the particular attachment.
 
@@ -77,6 +75,17 @@ You can verify that the action took effect by looking at the Media Vault column 
 3. The WordPress Media Upload page with Media Vault file protection activated (in mp6)
 
 == Changelog ==
+
+= 0.8 =
+
+* added functionality to allow a place-holder image to replace a requested protected image.
+* refactored permission resolving functions to be more thorough and efficient.
+* modified `mgjp_mv_admin_check_user_permitted()` function to handle non admin checking and renamed it to `mgjp_mv_check_user_permitted()` to reflect this.
+* added plugin update handling class to manage per update required changes fluidly.
+* created an `uninstall.php` file and moved all settings removal actions there so that settings are now saved when a user only deactivates and does not remove the plugin.
+* added a link to the Media Vault settings to the Plugins page.
+* fixed bug with the Media Vault metabox not being able to set the default permission on the attachment.
+* fixed bug with the `mgjp_mv_get_the_permission()` function returning the wrong permission.
 
 = 0.7.1 =
 The Metabox - added a Media Vault metabox to the attachment editor screen to manage protection meta + bugfixing on the bulk actions script
@@ -94,11 +103,14 @@ Initial Release.
 
 == Upgrade Notice ==
 
+= 0.8 =
+The Update update - good amount of bugfixing, and streamlining of code. Added a class to handle fluid plugin updates and some functions to allow for image placeholders to appear in the place of restricted images.
+
 = 0.7.1 =
 The Metabox - added a Media Vault metabox to the attachment editor screen to manage protection meta + bugfixing
 
 = 0.7 =
-Version 0.7 includes minor remastering of the permission checking code, to address protected attachment access from within the WordPress backend. It is strongly recommended that you upgrade from version 0.6.
+Version 0.7 includes minor remastering of the permission checking code to address protected attachment access from within the WordPress backend. It is strongly recommended that you upgrade from version 0.6.
 
 = 0.6 =
 This is the original release version.
