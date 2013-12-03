@@ -231,7 +231,7 @@ function mgjp_mv_deactivate( $network_deactivating ) {
 
   if ( ! is_multisite() ) {
 
-    // run the activation function for the single site
+    // run the deactivation function for the single site
     _mgjp_mv_deactivate_local();
 
   } else if ( ! wp_is_large_network() ) {
@@ -239,7 +239,7 @@ function mgjp_mv_deactivate( $network_deactivating ) {
 
     $blog_ids = $wpdb->get_col( "SELECT `blog_id` FROM `$wpdb->blogs`" );
 
-    // run the activation function for each site in the network
+    // run the deactivation function for each site in the network
     foreach ( $blog_ids as $blog_id ) {
 
       switch_to_blog( $blog_id );
