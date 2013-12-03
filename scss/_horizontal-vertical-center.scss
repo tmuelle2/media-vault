@@ -1,0 +1,14 @@
+// Table based horizontal & vertical centering
+.hvalign-outer {
+  display: table;
+	height: 100%;
+	width: 100%;
+}
+.hvalign-mid {
+  display: table-cell;
+  vertical-align: middle;
+}
+.hvalign-inner {
+  display: table;
+  margin: 0 auto;
+}
