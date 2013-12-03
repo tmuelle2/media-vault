@@ -4,7 +4,7 @@ Donate Link:
 Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images
 Requires at least: 3.5.0
 Tested up to: 3.7.1
-Stable tag: 0.8
+Stable tag: 0.8.5
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -14,7 +14,7 @@ Protect attachment files from direct access using powerful and flexible restrict
 
 = Protected Attachment Files =
 
-Media Vault cordons off a section of your WordPress uploads folder and secures it, protecting all files within by passing requests for them through a *powerful and flexible* set of permission checks.
+Media Vault cordons off a section of your WordPress uploads folder and secures it, protecting all files within by passing requests for them through a *powerful, flexible and completely customizable* set of permission checks.
 
 After activating the plugin, to protect attachment files with Media Vault you can:
 
@@ -23,6 +23,8 @@ After activating the plugin, to protect attachment files with Media Vault you ca
 * using *bulk actions* in your Media Library page, you can change file protection on multiple pre-existing attachments at once.
 
 By default the only permission check that the plugin does on media files is that the user requesting them be logged in. You can change this default behavior from the 'Media Settings' page in the 'Settings' menu of the WordPress Admin. You can also change the restrictions set on attachments on an individual basis by means of the Media Vault metabox on the 'Edit Media' page.
+
+You can also write your own custom restrictions using the `mgjp_mv_add_permission()` function. See [this support question](http://wordpress.org/support/topic/restrict-only-for-subscribers?replies=5) for more details.
 
 = Safe Download Links =
 
@@ -48,19 +50,20 @@ where 'ids' are the comma separated list of attachment ids you would like to mak
 1. Type 'Media Vault' in the Search Box and press the 'Search' button.
 1. When you find 'Media Vault', click 'Install Now' and after reading it, click 'ok' on the little alert that pops up.
 1. When the plugin finishes installing, simply click 'Activate Now'.
-1. You can now go to the 'Media Settings' page under the 'Settings' menu to set the default permissions required for protected file access.
 
 = Downloading from WordPress.org =
 
-1. Clicking the big 'Download' button on the right on this page (wordpress.org/plugins/media-vault) will download the plugin's `zip` folder (`mediavault.zip`).
+1. Clicking the big 'Download' button on the right on this page (wordpress.org/plugins/media-vault/) will download the plugin's `zip` folder (`mediavault.zip`).
 1. Upload this `zip` folder to your server; to the `/wp-content/plugins/` directory of the site you wish to install the plugin on.
 1. Extract the contents of the `zip`. Once it is done you can delete the `mediavault.zip` file if you wish.
 1. Activate the plugin through the 'Plugins' menu in WordPress.
-1. You can now go to the 'Media Settings' page under the 'Settings' menu to set the default permissions required for protected file access.
+
+
+Once you have Media Vault activated and fully enabled don't forget to go and check out the plugin's settings on the 'Media Settings' page under the admin 'Settings' menu.
 
 == Frequently Asked Questions ==
 
-= How do I toggle File Protection on an existing Attachment =
+= How do I toggle File Protection on an existing Attachment? =
 
 You have two options. If you only want to toggle File Protection on **a single attachment**, you can do it directly from the attachment's Edit page. In the 'Media Vault Settings' metabox in the right column, you can toggle protection by clicking the button that will either say 'Add to Protected' or 'Remove from Protected'. Remember to click 'Update' to save the changes you have made.
 
@@ -68,22 +71,27 @@ If you want to toggle File Protection on **multiple attachments**, the plugin co
 
 You can verify that the action took effect by looking at the Media Vault column in the Media Library list table. It will display when an attachment's files are protected as well as the permissions set on the particular attachment.
 
+= Can files uploaded from the front-end be automatically protected? =
+
+Yes they can, see [this support question](http://wordpress.org/support/topic/default-upload-protection-from-front-end?replies=5) for more details!
+
 == Screenshots ==
 
 1. The WordPress Media Upload page with Media Vault file protection activated.
-2. An example of the access denied prompt produced by a custom file access restriction implemented very simply using Media Vault. (more on this custom implementation when the next version of the plugin is ready)
+2. An example of the access denied prompt produced by a custom file access restriction implemented very simply using Media Vault.
 3. The WordPress Media Upload page with Media Vault file protection activated (in mp6)
 
 == Changelog ==
 
 = 0.8.5 =
 
+* Now the plugin is not fully enabled if the rewrite rules are detected to not be fully functioning as required
 * Added flag to indicate Media Vault can **only** be network activated on WordPress Multisite installs
 * Added return to homepage link in standard access denied message on protected media
-* Added Media Vault Activation/Deactivation Helper (MVADH) to support setups where Media Vault cannot automatically configure all components it needs to function, particularly the rewrite rules. Currently, MVADH supports single & multisite WordPress installs on Apache + mod_rewrite. Support for more server technologies coming soon. *MVADH not supporting a particular server technology **does not** mean Media Vault cannot work with that technology*, just that you may need to figure some of how to make the rewrite rules work, by yourself.
-* Added **much** better support for WP multisite: better activation support, better deactivation support, better uninstallation support, better rewrite rule support, better file-handling support, better plugin update support. Suffice it to say it now works on multisite.
+* Added Media Vault Activation/Deactivation Helper (MVADH) to support setups where Media Vault cannot automatically configure all components it needs to function, particularly the rewrite rules. Currently, MVADH supports single & multisite WordPress installs on Apache + mod_rewrite. Support for more server technologies coming soon. *MVADH not supporting a particular server technology **does not** mean Media Vault cannot work with that technology*, just that you may need to figure some of how to make the rewrite rules work by yourself.
+* Added **much** better support for WP multisite: better activation support, better deactivation support, better uninstallation support, better rewrite rule support, better file-handling support, better plugin update support.
 * Added MVADH rewrite rule support for ugly permalink setups
-* Did some performance tweaks
+* Made some performance tweaks & minor bugfixing
 
 = 0.8 =
 
