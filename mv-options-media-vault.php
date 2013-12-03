@@ -15,12 +15,14 @@ register_setting( 'media', 'mgjp_mv_default_permission' );
 register_setting( 'media', 'mgjp_mv_options', 'mgjp_mv_options_sanitize' );
 register_setting( 'media', 'mgjp_mv_ir', 'mgjp_mv_ir_sanitize' );
 
+
 add_settings_section(
   'mgjp_mv_general_settings',
-  __( 'Media Vault', 'media-vault' ),
+  null,
   'mgjp_mv_render_general_settings_info_txt',
   'media'
 );
+
 
 add_settings_field(
   'default_permission',
@@ -110,6 +112,7 @@ function mgjp_mv_ir_sanitize( $input ) {
  */
 function mgjp_mv_render_general_settings_info_txt() {
 
+  echo '<h3 class="title" id="mgjp_mv_settings_section">Media Vault</h3>';
   echo '<p>';
     esc_html_e( 'Media Vault is a plugin that allows you to protect media files in your uploads folder.', 'media-vault' );
     echo ' ';

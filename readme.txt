@@ -37,7 +37,7 @@ where 'ids' are the comma separated list of attachment ids you would like to mak
 
 *Note:* Plugin comes with styles ready for WordPress [mp6](http://wordpress.org/plugins/mp6)!
 
-*Note:* Plugin requires [Pretty Permalinks](http://codex.wordpress.org/Using_Permalinks#Using_.22Pretty.22_permalinks) to be enabled in your WordPress installation.
+*Note:*  **Now supports WordPress MultiSite!**
 
 == Installation ==
 
@@ -76,6 +76,15 @@ You can verify that the action took effect by looking at the Media Vault column 
 
 == Changelog ==
 
+= 0.8.5 =
+
+* Added flag to indicate Media Vault can **only** be network activated on WordPress Multisite installs
+* Added return to homepage link in standard access denied message on protected media
+* Added Media Vault Activation/Deactivation Helper (MVADH) to support setups where Media Vault cannot automatically configure all components it needs to function, particularly the rewrite rules. Currently, MVADH supports single & multisite WordPress installs on Apache + mod_rewrite. Support for more server technologies coming soon. *MVADH not supporting a particular server technology **does not** mean Media Vault cannot work with that technology*, just that you may need to figure some of how to make the rewrite rules work, by yourself.
+* Added **much** better support for WP multisite: better activation support, better deactivation support, better uninstallation support, better rewrite rule support, better file-handling support, better plugin update support. Suffice it to say it now works on multisite.
+* Added MVADH rewrite rule support for ugly permalink setups
+* Did some performance tweaks
+
 = 0.8 =
 
 * added functionality to allow a place-holder image to replace a requested protected image.
@@ -102,6 +111,9 @@ The Metabox - added a Media Vault metabox to the attachment editor screen to man
 Initial Release.
 
 == Upgrade Notice ==
+
+= 0.8.5 =
+The WPMU update - more organized code, now 90% more optimized to run fine both on single-site installs as well as multisite installs.
 
 = 0.8 =
 The Update update - good amount of bugfixing, and streamlining of code. Added a class to handle fluid plugin updates and some functions to allow for image placeholders to appear in the place of restricted images.

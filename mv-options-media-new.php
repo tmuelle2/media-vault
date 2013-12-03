@@ -128,8 +128,8 @@ function mgjp_mv_render_media_new_options_message_box() {
 
     <div class="mgjp-mv-tag">
       <span aria-role="hidden" class="mgjp-mv-tag-icon"></span>
-      <?php echo esc_html( _ex( 'New Uploads are', 'as in: Uploads are now Protected', 'media-vault' ) ); ?>
-      <strong><?php echo esc_html( _ex( 'Protected', 'as in: Uploads are now Protected', 'media-vault' ) ); ?></strong>
+      <?php echo esc_html_x( 'New Uploads are', 'as in: Uploads are now Protected', 'media-vault' ); ?>
+      <strong><?php echo esc_html_x( 'Protected', 'as in: Uploads are now Protected', 'media-vault' ); ?></strong>
     </div>
 
   <?php endif;

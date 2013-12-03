@@ -104,7 +104,7 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
     $permissions = mgjp_mv_get_the_permissions();
 
     // permission set up error detection
-    $standard_error_txt = ' ' . __( 'Therefore for safety and privacy reasons this file is unavailable. Please contact the website administrator.', 'media-vault' );
+    $standard_error_txt = ' ' . esc_html__( 'Therefore for safety and privacy reasons this file is unavailable. Please contact the website administrator.', 'media-vault' ) . '<p><a href="' . home_url() . '">&larr;' . esc_html__( 'Return to homepage', 'media-vault' ) .'</a></p>';
 
     if ( ! isset( $permissions[$permission] ) )
       wp_die( __( 'The permissions set for this file are not recognized.', 'media-vault' ) . $standard_error_txt );
@@ -152,7 +152,9 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
     $etag = '"' . md5( $last_modified ) . '"';
     header( "Last-Modified: $last_modified GMT" );
     header( 'ETag: ' . $etag );
-    header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 100000000 ) . ' GMT' );
+    header( 'Cache-Control: no-store, no-cache, must-revalidate' ); // HTTP 1.1.
+    header( 'Pragma: no-cache' ); // HTTP 1.0.
+    header( 'Expires: Thu, 01 Dec 1994 16:00:00 GMT' ); // Proxies
 
     // Support for Conditional GET
     $client_etag = isset( $_SERVER['HTTP_IF_NONE_MATCH'] ) ? stripslashes( $_SERVER['HTTP_IF_NONE_MATCH'] ) : false;

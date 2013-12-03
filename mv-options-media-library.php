@@ -29,7 +29,7 @@ function mgjp_mv_modify_media_library_row_actions( $actions, $post ) {
 
   // check if current user is permitted to access the post
   if ( ! mgjp_mv_check_user_permitted( $post->ID ) )
-    return array( __( 'You do not have permission to access this attachment', 'media-vault' ) );
+    return array( esc_html__( 'You do not have permission to access this attachment', 'media-vault' ) );
 
   return $actions;
 }
@@ -47,7 +47,7 @@ add_filter( 'media_row_actions', 'mgjp_mv_modify_media_library_row_actions', 10,
  */
 function mgjp_mv_register_media_library_custom_column( $columns ) {
 
-  $columns['mgjp_mv_info'] = __( 'Media Vault', 'media-vault' );
+  $columns['mgjp_mv_info'] = 'Media Vault';
 
   return $columns;
 }
@@ -128,9 +128,9 @@ function mgjp_mv_add_media_library_bulk_actions_js() {
 
   $bulk_actions = array();
   if ( ! isset( $_GET['mgjp-mv-show-protected'] ) ) // hide action on 'Show Protected' media library page
-    $bulk_actions['mgjp-mv-protect'] = __( 'Add to Protected', 'media-vault' );
+    $bulk_actions['mgjp-mv-protect'] = esc_html__( 'Add to Protected', 'media-vault' );
   if ( ! isset( $_GET['mgjp-mv-show-unprotected'] ) ) // hide action on 'Show Unprotected' media library page
-    $bulk_actions['mgjp-mv-unprotect'] = __( 'Remove from Protected', 'media-vault' );
+    $bulk_actions['mgjp-mv-unprotect'] = esc_html__( 'Remove from Protected', 'media-vault' );
 
   ?>
 
@@ -194,6 +194,7 @@ function mgjp_mv_add_media_library_admin_notices() {
 add_action( 'admin_notices', 'mgjp_mv_add_media_library_admin_notices' );
 
 
+
 /** Handle Media Vault bulk actions **/
 $wp_list_table = _get_list_table( 'WP_Media_List_Table' );
 $action = $wp_list_table->current_action();
@@ -224,7 +225,7 @@ $pagenum = $wp_list_table->get_pagenum();
 if ( $pagenum > 1 )
   $location = add_query_arg( 'paged', $pagenum, $location );
 
-include( plugin_dir_path( __FILE__ ) . 'includes/mgjp-functions.php' );
+require_once( plugin_dir_path( __FILE__ ) . 'includes/mgjp-functions.php' );
 
 switch( $action ) {
 

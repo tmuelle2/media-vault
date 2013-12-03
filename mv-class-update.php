@@ -26,14 +26,26 @@
  */
 class MGJP_MV_Update {
 
-  // associative array of version numbers below which
-  // an update is required and the update that is required
-  // for each respective version upgrade
-  // array key = version number less than which
-  // array value update is necessary
+  /**
+   * associative array of version numbers below which
+   * an update is required
+   * array key = version number less than which this update callback must run
+   * array value = the update callback to run
+   *
+   * @since 0.8
+   */
   var $updates = array(
-    '0.8' => 'update_08'
+    '0.8'   => 'update_08',
+    '0.8.5' => 'update_085'
   );
+
+  /**
+   * Boolean holds whether the page should reload
+   * after all the update scripts have run
+   *
+   * @since 0.8.5
+   */
+  var $force_reload = false;
 
   /**
    * Compare the current version with the version updated
@@ -59,7 +71,7 @@ class MGJP_MV_Update {
     }
 
     if ( ! isset( $updates_start ) )
-      return update_option( $option_key, $version_cur );
+      return update_site_option( $option_key, $version_cur );
 
     $updates_todo = array_slice(
       $this->updates,
@@ -74,6 +86,17 @@ class MGJP_MV_Update {
     }
 
     update_site_option( $option_key, $version_cur );
+
+    if ( ! $this->force_reload )
+      return;
+
+    $current_url = esc_url_raw( '//' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ) );
+
+    if ( headers_sent() )
+      echo '<meta http-equiv="refresh" content="' . esc_attr( "0;url=$current_url" ) . '" />';
+    else
+      wp_redirect( $current_url );
+    exit;
   }
 
   /**
@@ -84,7 +107,6 @@ class MGJP_MV_Update {
    * Modifies the db replacing all references to the deprecated
    * `mgjp_mv_meta` post meta key with the new `_mgjp_mv_permission`
    * post meta key.
-   * 
    *
    * @since 0.8
    *
@@ -151,7 +173,29 @@ class MGJP_MV_Update {
     // and delete all other references to 'mgjp_mv_meta'
     delete_post_meta_by_key( 'mgjp_mv_meta' );
   }
-}
+
+  /**
+   * Verifies that the rewrite rules required for Media Vault
+   * to function correctly are set and functioning. If they are
+   * it enables all the plugin's functionality and sets the
+   * force_reload flag for the update class
+   *
+   * @since 0.8.5
+   *
+   * @uses mgjp_mv_check_rewrite_rules()
+   */
+  function update_085() {
+
+    if ( ! mgjp_mv_check_rewrite_rules() )
+      return;
+
+    update_site_option( 'mgjp_mv_enabled', true );
+
+    $this->force_reload = true;
+
+  }
+
+} // END of class MGJP_MV_Update
 
 
 ?>

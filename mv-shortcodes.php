@@ -80,7 +80,7 @@ function mgjp_mv_download_links_list_shortcode_handler( $atts ) {
       <?php endforeach; ?>
     </ul>
 
-  <?php endif; 
+  <?php endif;
 
   return ob_get_clean();
 }

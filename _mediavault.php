@@ -3,9 +3,10 @@
 Plugin Name: Media Vault
 Plugin URI: http://wordpress.org/plugins/media-vault/
 Description: Protect attachment files from direct access using powerful and flexible restrictions. Offer safe download links for any file in your uploads folder.
+Network: true
 Text Domain: media-vault
 Domain Path: /languages
-Version: 0.8
+Version: 0.8.5
 Author: Max GJ Panas
 Author URI: http://maxpanas.com
 License: GPLv3 or later
@@ -28,7 +29,683 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 // define current plugin version constant
-define( 'MGJP_MV_VERSION', '0.8' );
+define( 'MGJP_MV_VERSION', '0.8.5' );
+
+
+/**
+ * The default Media Vault permissions array
+ *
+ * @since 0.4
+ *
+ * @global $mgjp_mv_permissions array Array of default Media Vault file access permissions
+ */
+global $mgjp_mv_permissions;
+$mgjp_mv_permissions = array(
+  'admin'     =>  array(
+      'description'  => __( 'Admin users only', 'media-vault' ),
+      'select'       => __( 'Admin users', 'media-vault' ),
+      'logged_in'    => true,
+      'run_in_admin' => true,
+      'cb'           => 'mgjp_mv_check_admin_permission'
+    ),
+  'author'    =>  array(
+      'description'  => __( 'The file\'s author', 'media-vault' ),
+      'select'       => __( 'The file\'s author', 'media-vault' ),
+      'logged_in'    => true,
+      'run_in_admin' => true,
+      'cb'           => 'mgjp_mv_check_author_permission'
+    ),
+  'logged-in' =>  array(
+      'description'  => __( 'All logged-in users', 'media-vault' ),
+      'select'       => __( 'Logged-in users', 'media-vault' ),
+      'logged_in'    => true,
+      'run_in_admin' => false,
+      'cb'           => false
+    ),
+  'all'       =>  array(
+      'description'  => __( 'Anyone', 'media-vault' ),
+      'select'       => __( 'Anyone', 'media-vault' ),
+      'logged_in'    => false,
+      'run_in_admin' => false,
+      'cb'           => false
+    )
+);
+
+
+register_activation_hook( __FILE__, 'mgjp_mv_activate' );
+register_deactivation_hook( __FILE__, 'mgjp_mv_deactivate' );
+
+add_action( 'plugins_loaded', 'mgjp_mv_textdomain' );
+
+add_action( 'init', 'mgjp_mv_check_version' );
+
+add_action( 'load-plugins.php', 'mgjp_mv_on_deactivation_request' );
+
+if ( get_site_option( 'mgjp_mv_enabled' ) ) {
+
+  add_action( 'init', 'mgjp_mv_handle_media_access_and_download', 0 );
+  add_action( 'init', 'mgjp_mv_register_shortcodes' );
+
+  add_filter( 'mod_rewrite_rules', 'mgjp_mv_add_plugin_rewrite_rules' );
+
+  add_filter( 'upload_dir', 'mgjp_mv_change_upload_directory', 999 );
+
+  add_filter( 'user_has_cap', 'mgjp_mv_edit_capabilities', 999, 3 );
+
+  add_filter( 'image_downsize', 'mgjp_mv_replace_protected_image', 999, 3 );
+
+  if ( is_admin() ) {
+
+    add_action( 'admin_init', 'mgjp_mv_ajax_actions_include', 0 );
+    add_action( 'admin_init', 'mgjp_mv_media_vault_options_include' );
+    add_action( 'admin_init', 'mgjp_mv_attachment_metabox_include' );
+
+    add_action( 'load-media-new.php', 'mgjp_mv_media_new_options_include' );
+    add_action( 'load-upload.php', 'mgjp_mv_media_library_options_include' );
+
+    add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'mgjp_mv_settings_link' );
+
+  }
+
+} else {
+
+  include( plugin_dir_path( __FILE__ ) . 'mv-extra-activation-steps.php' );
+
+}
+
+if ( get_site_option( 'mgjp_mv_deactivation' ) )
+  include( plugin_dir_path( __FILE__ ) . 'mv-extra-deactivation-steps.php' );
+
+
+//-----------------------------------------------------------------------//
+// MEDIA VAULT - PERMISSION CHECKING FUNCTIONS
+//-----------------------------------------------------------------------//
+
+
+/**
+ * The 'admin' permission checking callback.
+ *
+ * @since 0.4
+ */
+function mgjp_mv_check_admin_permission() {
+  if ( ! current_user_can( 'manage_options' ) )
+    return new WP_Error( 'not_admin', __( 'You do not have sufficient permissions to view this file.', 'media-vault' ) );
+
+  return true;
+}
+
+/**
+ * The 'author' permission checking callback.
+ *
+ * @since 0.4
+ */
+function mgjp_mv_check_author_permission( $attachment_id ) {
+
+  if ( current_user_can( 'manage_options' ) )
+    return true;
+
+  if ( ! isset( $attachment_id ) || empty( $attachment_id ) )
+    return new WP_Error( 'no_id', __( 'There was an error determining this attachment\'s author. Please contact the website administrator.', 'media-vault' ) );
+
+  if ( get_current_user_id() != get_post_field( 'post_author', $attachment_id, 'raw' ) )
+    return new WP_Error( 'not_author', __( 'You do not have sufficient permissions to view this file.', 'media-vault' ) );
+
+  return true;
+}
+
+
+
+//-----------------------------------------------------------------------//
+// MEDIA VAULT - MAIN HOOKED FUNCTIONS
+//-----------------------------------------------------------------------//
+
+
+/**
+ * On plugin activation
+ *
+ * @since 0.1
+ *
+ * @uses _mgjp_mv_activate_local()
+ */
+function mgjp_mv_activate( $network_activating ) {
+
+  global $is_apache;
+
+  if ( $is_apache
+      && ! is_multisite()
+      && get_option( 'permalink_structure' )
+      && got_mod_rewrite()
+      && is_writable( get_home_path() . '.htaccess' ) ) {
+
+    // register plugin enabled option
+    update_site_option( 'mgjp_mv_enabled', true );
+
+    // Flush rewrite rules to add Media Vault rewrite rules to the
+    // site's .htaccess file on plugin activation
+    add_filter( 'mod_rewrite_rules', 'mgjp_mv_add_plugin_rewrite_rules' );
+    flush_rewrite_rules();
+  }
+
+  // register Media Vault's other network-wide options
+  add_site_option( 'mgjp_mv_version', MGJP_MV_VERSION, '', 'yes' );
+  delete_site_option( 'mgjp_mv_deactivation' );
+
+  if ( ! is_multisite() ) {
+
+    // run the activation function for the single site
+    _mgjp_mv_activate_local();
+
+  } else if ( ! wp_is_large_network() ) {
+    global $wpdb;
+
+    $blog_ids = $wpdb->get_col( "SELECT `blog_id` FROM `$wpdb->blogs`" );
+
+    // run the activation function for each site in the network
+    foreach ( $blog_ids as $blog_id ) {
+
+      switch_to_blog( $blog_id );
+      _mgjp_mv_activate_local( $blog_id );
+      restore_current_blog();
+
+    }
+  }
+}
+
+
+/**
+ * On plugin deactivation
+ *
+ * @since 0.1
+ *
+ * @uses mgjp_mv_check_rewrite_rules()
+ */
+function mgjp_mv_deactivate( $network_deactivating ) {
+
+  delete_site_option( 'mgjp_mv_deactivation' );
+  delete_site_option( 'mgjp_mv_enabled' );
+
+  // Flush rewrite rules to remove Media Vault rewrite rules from the
+  // site's .htaccess file on plugin deactivation
+  remove_filter( 'mod_rewrite_rules', 'mgjp_mv_add_plugin_rewrite_rules' );
+  flush_rewrite_rules();
+
+  if ( ! is_multisite() ) {
+
+    // run the activation function for the single site
+    _mgjp_mv_deactivate_local();
+
+  } else if ( ! wp_is_large_network() ) {
+    global $wpdb;
+
+    $blog_ids = $wpdb->get_col( "SELECT `blog_id` FROM `$wpdb->blogs`" );
+
+    // run the activation function for each site in the network
+    foreach ( $blog_ids as $blog_id ) {
+
+      switch_to_blog( $blog_id );
+      _mgjp_mv_deactivate_local( $blog_id );
+      restore_current_blog();
+
+    }
+  }
+}
+
+
+/**
+ * Load the plugin textdomain.
+ *
+ * @since 0.1
+ */
+function mgjp_mv_textdomain() {
+
+  load_plugin_textdomain( 'media-vault', false, plugin_dir_path( __FILE__ ) . 'languages/' );
+
+}
+
+
+/**
+ * Plugin update handling. Checks current version against
+ * a version number stored in the database and performs any
+ * necessary upgrades using the MGJP_MV_Update class
+ *
+ * @since 0.8
+ *
+ * @uses MGJP_MV_Update
+ */
+function mgjp_mv_check_version() {
+
+  $option_key = 'mgjp_mv_version';
+
+  $version_db = get_site_option( $option_key, '0' );
+
+  if ( version_compare( $version_db, MGJP_MV_VERSION, 'eq' ) )
+    return;
+
+  if ( version_compare( $version_db, MGJP_MV_VERSION, 'gt' ) )
+    return update_site_option( $option_key, MGJP_MV_VERSION );
+
+  include( plugin_dir_path( __FILE__ ) . 'mv-class-update.php' );
+
+  if ( class_exists( 'MGJP_MV_Update' ) )
+    new MGJP_MV_Update( $version_db, MGJP_MV_VERSION, $option_key );
+
+}
+
+
+/**
+ * Remove Media Vault from the plugins.php deactivation
+ * actions if Media Vault needs extra steps in order
+ * to deactivate
+ *
+ * @since 0.8.5
+ *
+ * @uses mgjp_mv_get_dirfile()
+ * @uses mgjp_mv_is_deactivation_allowed()
+ */
+function mgjp_mv_on_deactivation_request() {
+
+  if ( in_array( get_site_option( 'mgjp_mv_deactivation' ), array( 'allowed', 'temp' ) ) )
+    return;
+
+  $action = isset( $_REQUEST['action'] ) && -1 != $_REQUEST['action'] ?
+    $_REQUEST['action'] :
+    ( isset( $_REQUEST['action2'] ) && -1 != $_REQUEST['action2'] ?
+      $_REQUEST['action2'] :
+      false
+    );
+
+  if ( ! in_array( $action, array( 'deactivate', 'deactivate-selected' ) ) )
+    return;
+
+  switch ( $action ) {
+    case 'deactivate':
+      if ( ! isset( $_REQUEST['plugin'] ) || mgjp_mv_get_dirfile() != $_REQUEST['plugin'] )
+        return;
+
+      if ( mgjp_mv_is_deactivation_allowed() )
+        return;
+
+      update_site_option( 'mgjp_mv_deactivation', 'disallowed' );
+
+      $location = remove_query_arg( array( 'action', 'plugin', '_wpnonce' ), $_SERVER['REQUEST_URI'] );
+      wp_redirect( $location );
+      exit;
+      break;
+    case 'deactivate-selected':
+      $plugin_dirfile = mgjp_mv_get_dirfile();
+
+      if ( ! isset( $_POST['checked'] ) || ! in_array( $plugin_dirfile, (array) $_POST['checked'] ) )
+        return;
+
+      if ( mgjp_mv_is_deactivation_allowed() )
+        return;
+
+      update_site_option( 'mgjp_mv_deactivation', 'disallowed' );
+
+      $_POST['checked'] = array_diff( $_POST['checked'], array( $plugin_dirfile ) );
+      break;
+  }
+}
+
+
+/**
+ * Trigger protected media uploads file handling function
+ * if 'file' GET parameter is set in URL on wp init
+ *
+ * @since 0.1
+ *
+ * @uses mgjp_mv_get_file()
+ */
+function mgjp_mv_handle_media_access_and_download() {
+
+  if ( isset( $_GET['mgjp_mv_file'] ) && ! empty( $_GET['mgjp_mv_file'] ) ) {
+
+    // used by @func mgjp_mv_check_rewrite_rules to verify rewrite rules are
+    // set and working as intended
+    if ( isset( $_GET['mgjp_mv_rewrite_test'] ) && $_GET['mgjp_mv_rewrite_test'] )
+      die( 'pass' );
+
+    require( plugin_dir_path( __FILE__ ) . 'mv-file-handler.php' );
+
+    // Check if force download flag is set
+    $force_download = isset( $_REQUEST['mgjp_mv_download'] ) ?
+                        $_REQUEST['mgjp_mv_download'] :
+                        '';
+
+    if ( function_exists( 'mgjp_mv_get_file' ) ) {
+      mgjp_mv_get_file( $_GET['mgjp_mv_file'], $force_download );
+      exit; // This exit is important as all we want to do when a
+            // media download is requested is to serve it and exit
+            // If it is missing WP will continue serving the page
+            // after the media file, thus breaking it
+    }
+  }
+}
+
+
+/**
+ * Register Media Vault Shortcodes
+ *
+ * @since 0.5
+ */
+function mgjp_mv_register_shortcodes() {
+
+  include( plugin_dir_path( __FILE__ ) . 'mv-shortcodes.php' );
+
+  if ( function_exists( 'mgjp_mv_download_links_list_shortcode_handler' ) )
+    add_shortcode( 'mv_dl_links', 'mgjp_mv_download_links_list_shortcode_handler' );
+
+}
+
+
+/**
+ * Add Media Vault settings link on plugins manager page
+ *
+ * @since 0.8
+ *
+ * @param $links array Array of links associated with plugin
+ * @return array Array of links associated with plugin plus settings link
+ */
+function mgjp_mv_settings_link( $links ) {
+
+  $settings_link = '<a href="options-media.php#mgjp_mv_settings_section">'
+    . esc_html__( 'Settings', 'media-vault' )
+    . '</a>';
+
+  array_push( $links, $settings_link );
+
+  return $links;
+}
+
+
+/**
+ * Add the plugin rewrite rules to the WP rewrite
+ * rules being written in the sitewide .htaccess file
+ *
+ * @since 0.8.5
+ *
+ * @uses mgjp_mv_get_the_rewrite_rules()
+ * @param $rules string String containing all rewrite rules to be written in htaccess
+ * @return string String containing all rewrite rules to be written in htaccess
+ *                including Media Vault custom rewrite rules
+ */
+function mgjp_mv_add_plugin_rewrite_rules( $rules ) {
+
+  $pattern = "RewriteRule ^index\.php$ - [L]\n";
+
+  return str_replace( $pattern, "$pattern\n" . implode( "\n", mgjp_mv_get_the_rewrite_rules() ) . "\n\n", $rules );
+}
+
+
+/**
+ * Change upload directory for media uploads to a protected
+ * folder if the 'protected' post/get parameter has been set
+ * during the upload process.
+ *
+ * @since 0.1
+ *
+ * @uses mgjp_mv_upload_dir()
+ * @param $param array Array of path info for WP Upload Directory
+ * @return array Array of path info for Media Vault protected directory
+ */
+function mgjp_mv_change_upload_directory( $param ) {
+
+  if ( isset( $_POST['mgjp_mv_protected'] ) && 'on' == $_POST['mgjp_mv_protected'] ) {
+    $param['subdir'] = mgjp_mv_upload_dir( $param['subdir'], true );
+    $param['path']   = $param['basedir'] . $param['subdir'];
+    $param['url']    = $param['baseurl'] . $param['subdir'];
+  }
+
+  return $param;
+}
+
+
+/**
+ * Function for the 'user_has_cap' WP Core filter. Checks the permissions set
+ * on an attachment before making it available to a user to edit/delete/read.
+ *
+ * @since 0.7
+ *
+ * @uses mgjp_mv_check_user_permitted()
+ * @param $allcaps array Array of all user capabilities
+ * @param $cap array  [0] string capability required
+ * @param $args array [0] string capability requested
+ *                    [1] int user ID
+ *                    [2] int post ID
+ * @return array @param $allcaps unchanged if user permitted to access post
+ * @return array @param $allcaps with capability @param $cap[0] set to false
+ */
+function mgjp_mv_edit_capabilities( $allcaps, $cap, $args ) {
+
+  $disallowed_caps = array(
+    'edit_post',
+    'delete_post',
+    'read_post'
+  );
+
+  if ( ! in_array( $args[0], $disallowed_caps ) )
+    return $allcaps;
+
+  if ( ! isset( $args[2] ) )
+    return $allcaps;
+
+  // check if user is permitted to access the post
+  if ( mgjp_mv_check_user_permitted( $args[2] ) )
+    return $allcaps;
+
+  $allcaps[$cap[0]] = false;
+
+  return $allcaps;
+}
+
+
+/**
+ * Replace requested image with a Media Vault place-holder
+ * if the user is not permitted to view them
+ *
+ * @since 0.8
+ *
+ * @param $img mixed false based on wp-includes/media.php or array if other filter has affected it
+ * @param $attachment_id int ID of the attachment whose image is being requested
+ * @param $size string name-id of the dimensions of the requested image
+ * @return mixed return the $url if the image is not protected
+ * @return array [0] string URL to the Media Vault replacement image of the requested size
+ *               [1] string width of the Media Vault replacement image
+ *               [2] string height of the Media Vault replacement image
+ *               [3] bool whether the url is for a resized image or not
+ */
+function mgjp_mv_replace_protected_image( $img, $attachment_id, $size ) {
+
+  $ir = get_option( 'mgjp_mv_ir' );
+
+  if ( ! isset( $ir['is_on'] ) || ! $ir['is_on'] )
+    return $img;
+
+  $upload_dir = wp_upload_dir();
+
+  if ( isset( $img[0] ) && 0 !== strpos( ltrim( $img[0], $upload_dir['baseurl'] ), mgjp_mv_upload_dir( '/', true ) ) )
+    return $img;
+
+  if ( mgjp_mv_check_user_permitted( $attachment_id ) )
+    return $img;
+
+  if ( isset( $ir['id'] ) && ! mgjp_mv_is_protected( $ir['id'] ) ) {
+
+    remove_filter( 'image_downsize', 'mgjp_mv_replace_protected_image', 999, 3 );
+    $placeholder = wp_get_attachment_image_src( $ir['id'], $size );
+    add_filter( 'image_downsize', 'mgjp_mv_replace_protected_image', 999, 3 );
+
+    return $placeholder;
+
+  } else {
+
+    list( $width, $height ) = image_constrain_size_for_editor( 1024, 1024, $size );
+
+    return array(
+      plugins_url( 'imgs/media-vault-ir.jpg', __FILE__ ),
+      $width,
+      $height,
+      false
+    );
+
+  }
+}
+
+
+/**
+ * Include the Media Vault custom AJAX actions
+ *
+ * @since 0.8
+ */
+function mgjp_mv_ajax_actions_include() {
+
+  if ( defined( 'DOING_AJAX' ) && DOING_AJAX )
+    include( plugin_dir_path( __FILE__ ) . 'mv-ajax-actions.php' );
+
+}
+
+
+/**
+ * Include the plugin's general settings
+ *
+ * @since 0.4
+ */
+function mgjp_mv_media_vault_options_include() {
+
+  include( plugin_dir_path( __FILE__ ) . 'mv-options-media-vault.php' );
+
+}
+
+
+/**
+ * Include the custom attachment metabox functions
+ *
+ * @since 0.7.1
+ */
+function mgjp_mv_attachment_metabox_include() {
+
+  include( plugin_dir_path( __FILE__ ) . 'mv-metaboxes.php' );
+
+}
+
+
+/**
+ * Include the options for protected media uploads
+ * on the 'media-new.php' admin page
+ *
+ * @since 0.2
+ */
+function mgjp_mv_media_new_options_include() {
+
+  include( plugin_dir_path( __FILE__ ) . 'mv-options-media-new.php' );
+
+}
+
+
+/**
+ * Include the options for protected media uploads
+ * on the 'upload.php' (Media Library) admin page
+ *
+ * @since 0.3
+ */
+function mgjp_mv_media_library_options_include() {
+
+  include( plugin_dir_path( __FILE__ ) . 'mv-options-media-library.php' );
+
+}
+
+
+
+//-----------------------------------------------------------------------//
+// MEDIA VAULT - GENERAL FUNCTIONS
+//-----------------------------------------------------------------------//
+
+
+/**
+ * Media Vault internal Activation function for a single
+ * blog install or for each blog site
+ * in network activation mode
+ *
+ * @since 0.8.5
+ *
+ * @uses mgjp_mv_default_options()
+ * @uses mgjp_mv_load_placeholder_image()
+ */
+function _mgjp_mv_activate_local( $blog_id = 0 ) {
+
+  // register Media Vault options to the local options table
+  add_option( 'mgjp_mv_default_permission', 'logged-in', '', 'yes' );
+
+  add_option( 'mgjp_mv_options', mgjp_mv_default_options(), '', 'no' );
+  add_option( 'mgjp_mv_ir', array( 'is_on' => true ), '', 'no' );
+
+  mgjp_mv_load_placeholder_image();
+
+  do_action( 'mgjp_mv_activated_local', $blog_id );
+}
+
+
+/**
+ * Checks whether Media Vault requires extra
+ * deactivation steps before it can be correctly
+ * deactivated
+ *
+ * @since 0.8.5
+ *
+ * @return bool true
+ *              false
+ */
+function mgjp_mv_is_deactivation_allowed() {
+
+  if ( 'temp' === get_site_option( 'mgjp_mv_deactivation' ) )
+    return true;
+
+  global $is_apache;
+  if ( $is_apache
+        && ! is_multisite()
+        && get_option( 'permalink_structure' )
+        && is_writable( get_home_path() . '.htaccess' ) )
+    return true;
+
+  if ( ! mgjp_mv_check_rewrite_rules( true ) )
+    return true;
+
+  return false;
+}
+
+
+/**
+ * Media Vault internal Deactivation function for a single
+ * blog install or for each blog site
+ * in network activation mode
+ *
+ * @since 0.8.5
+ */
+function _mgjp_mv_deactivate_local( $blog_id = 0 ) {
+
+  // unload default placeholder image if it exists
+  $ir = get_option( 'mgjp_mv_ir' );
+  if ( isset( $ir['default'] ) && wp_attachment_is_image( $ir['default'] ) )
+    wp_delete_attachment( $ir['default'], true );
+
+  do_action( 'mgjp_mv_deactivated_local', $blog_id );
+}
+
+
+/**
+ * Return the relative "Path to plugin file with plugin data"
+ *
+ * @since 0.8.5
+ *
+ * @return string
+ */
+function mgjp_mv_get_dirfile() {
+
+  $plugin_dir  = explode( '/', plugin_basename( __FILE__ ) )[0];
+  $plugin_file = array_keys( get_plugins( "/$plugin_dir" ) )[0];
+
+  return "$plugin_dir/$plugin_file";
+}
 
 
 /**
@@ -47,6 +724,112 @@ function mgjp_mv_upload_dir( $path = '', $in_url = false ) {
   $dirpath .= $path;
 
   return $dirpath;
+
+}
+
+
+/**
+ * Generate the rewrite rules to reroute requests for
+ * media uploads within protected folders and requests 
+ * for media uploads with the `safeforce` download flag
+ * set, to the file-handling script. Even supporting
+ * WP Multisite.
+ *
+ * @since 0.8.5
+ *
+ * @uses mgjp_mv_upload_dir()
+ * @return array Array of strings of each line of the
+ *               plugin's custom rewrite rules.
+ */
+function mgjp_mv_get_the_rewrite_rules() {
+
+  $upload       = wp_upload_dir();
+  $uploads_path = str_replace( site_url( '/' ), '', $upload['baseurl'] );
+
+  // if is multisite add allowance for '/sites/ID' folders in uploads path
+  if ( is_multisite() )
+    $uploads_path .= '(?:/sites/[0-9]+)?';
+
+  // if multisite is on sub-directory mode add allowance for the site's 
+  // sub-directory in the rewrite regex
+  if ( is_multisite() && ! is_subdomain_install() )
+    $uploads_path = '(?:[_0-9a-zA-Z-]+/)?' . $uploads_path;
+
+  $old_path_protected = $uploads_path . '(' . mgjp_mv_upload_dir( '/.*\.\w+)$', true );
+  $old_path_downloads = $uploads_path . '(.*\.\w+)$';
+
+  $rewrite_rules = array(
+    '# Media Vault Rewrite Rules',
+    'RewriteRule ^' . $old_path_protected . ' index.php?mgjp_mv_file=$1 [QSA,L]',
+    'RewriteCond %{QUERY_STRING} ^(?:.*&)?mgjp_mv_download=safeforce(?:&.*)?$',
+    'RewriteRule ^' . $old_path_downloads . ' index.php?mgjp_mv_file=$1 [QSA,L]',
+    '# Media Vault Rewrite Rules End'
+  );
+
+  // if pretty permalinks not enabled then produce the code necessary for the user to manually
+  // add the rules to .htaccess
+  if ( ! is_multisite() && ! get_option( 'permalink_structure' ) ) {
+    $home_root = parse_url( home_url() );
+    if ( isset( $home_root['path'] ) )
+      $home_root = trailingslashit( $home_root['path'] );
+    else
+      $home_root = '/';
+
+    array_splice( $rewrite_rules, 1, 0, array(
+      '<ifModule mod_rewrite.c>',
+      'RewriteEngine On',
+      'RewriteBase ' . $home_root
+    ) );
+    array_splice( $rewrite_rules, -1, 0, array(
+      '</ifModule>'
+    ) );
+  }
+
+  return apply_filters( 'mgjp_mv_get_rewrite_rules', $rewrite_rules );
+
+}
+
+/**
+ * Check if .htaccess rules have been configured correctly
+ * Don't call on init! - it makes **at least** two http
+ * requests every time it is called!
+ *
+ * @since 0.8.5
+ *
+ * @uses mgjp_mv_upload_dir()
+ * @return bool
+ */
+function mgjp_mv_check_rewrite_rules( $deactivation = false ) {
+
+  $upload_dir = wp_upload_dir();
+
+  $protected_test = mgjp_mv_upload_dir( '/mgjp_mv_rewrite_test.txt?mgjp_mv_rewrite_test=1', true );
+  $downloads_test = '/mgjp_mv_rewrite_test.txt?mgjp_mv_download=safeforce&mgjp_mv_rewrite_test=1';
+
+  $checks = array(
+    $upload_dir['baseurl'] . $protected_test,
+    $upload_dir['baseurl'] . $downloads_test
+  );
+
+  $checks = apply_filters( 'mgjp_mv_rewrite_rule_check_urls', $checks );
+
+  $checks_passed = true;
+  foreach ( $checks as $check_url ) {
+
+    $check = wp_remote_get( $check_url );
+
+    if ( is_wp_error( $check )
+         || ! isset( $check['response']['code'] ) || 200 != $check['response']['code']
+         || ! isset( $check['body'] ) || 'pass' != $check['body'] )
+      $checks_passed = false;
+    else
+      $checks_passed = true;
+
+    if ( ( ! $deactivation && ! $checks_passed ) || ( $deactivation && $checks_passed ) )
+      break;
+  }
+
+  return $checks_passed;
 
 }
 
@@ -152,75 +935,7 @@ function mgjp_mv_is_protected( $attachment_id ) {
 }
 
 
-/**
- * The default Media Vault permissions array
- *
- * @since 0.4
- *
- * @global $mgjp_mv_permissions array Array of default Media Vault file access permissions
- */
-global $mgjp_mv_permissions;
-$mgjp_mv_permissions = array(
-  'admin'     =>  array(
-                    'description'  => __( 'Admin users only', 'media-vault' ),
-                    'select'       => __( 'Admin users', 'media-vault' ),
-                    'logged_in'    => true,
-                    'run_in_admin' => true,
-                    'cb'           => 'mgjp_mv_check_admin_permission'
-                  ),
-  'author'    =>  array(
-                    'description'  => __( 'The file\'s author', 'media-vault' ),
-                    'select'       => __( 'The file\'s author', 'media-vault' ),
-                    'logged_in'    => true,
-                    'run_in_admin' => true,
-                    'cb'           => 'mgjp_mv_check_author_permission'
-                  ),
-  'logged-in' =>  array(
-                    'description'  => __( 'All logged-in users', 'media-vault' ),
-                    'select'       => __( 'Logged-in users', 'media-vault' ),
-                    'logged_in'    => true,
-                    'run_in_admin' => false,
-                    'cb'           => false
-                  ),
-  'all'       =>  array(
-                    'description'  => __( 'Anyone', 'media-vault' ),
-                    'select'       => __( 'Anyone', 'media-vault' ),
-                    'logged_in'    => false,
-                    'run_in_admin' => false,
-                    'cb'           => false
-                  )
-);
 
-/**
- * The 'admin' permission checking callback.
- *
- * @since 0.4
- */
-function mgjp_mv_check_admin_permission() {
-  if ( ! current_user_can( 'manage_options' ) )
-    return new WP_Error( 'not_admin', __( 'You do not have sufficient permissions to view this file.', 'media-vault' ) );
-
-  return true;
-}
-
-/**
- * The 'author' permission checking callback.
- *
- * @since 0.4
- */
-function mgjp_mv_check_author_permission( $attachment_id ) {
-
-  if ( current_user_can( 'manage_options' ) )
-    return true;
-
-  if ( ! isset( $attachment_id ) || empty( $attachment_id ) )
-    return new WP_Error( 'no_id', __( 'There was an error determining this attachment\'s author. Please contact the website administrator.', 'media-vault' ) );
-
-  if ( get_current_user_id() != get_post_field( 'post_author', $attachment_id, 'raw' ) )
-    return new WP_Error( 'not_author', __( 'You do not have sufficient permissions to view this file.', 'media-vault' ) );
-
-  return true;
-}
 
 
 /**
@@ -373,7 +1088,7 @@ function mgjp_mv_move_attachment_to_protected( $attachment_id ) {
 
   $new_reldir = path_join( mgjp_mv_upload_dir(), dirname( $file ) );
 
-  include_once( plugin_dir_path( __FILE__ ) . 'includes/mgjp-functions.php' );
+  require_once( plugin_dir_path( __FILE__ ) . 'includes/mgjp-functions.php' );
 
   return mgjp_move_attachment_files( $attachment_id, $new_reldir );
 }
@@ -399,7 +1114,7 @@ function mgjp_mv_move_attachment_from_protected( $attachment_id ) {
 
   $new_reldir = ltrim( dirname( $file ), mgjp_mv_upload_dir( '/' ) );
 
-  include_once( plugin_dir_path( __FILE__ ) . 'includes/mgjp-functions.php' );
+  require_once( plugin_dir_path( __FILE__ ) . 'includes/mgjp-functions.php' );
 
   return mgjp_move_attachment_files( $attachment_id, $new_reldir );
 }
@@ -452,387 +1167,55 @@ function mgjp_mv_default_options() {
 
 
 /**
- * Load the plugin textdomain.
+ * Echo Media Vault Custom
+ * admin notice
  *
- * @since 0.1
+ * @since 0.8.5
+ *
+ * @param $desc string Notice text, can contain 'em' & 'strong' html tags
+ * @param $link array (optional) [link] link
+ *                               [text] link text
  */
-function mgjp_mv_textdomain() {
+function mgjp_mv_admin_notice( $desc, $links = null ) {
 
-  load_plugin_textdomain( 'media-vault', false, plugin_dir_path( __FILE__ ) . 'languages/' );
+  wp_enqueue_style( 'mgjp-mv-admin-notice', plugins_url( 'css/mv-admin-notice.css', __FILE__ ), 'all', null );
 
+  ?>
+
+    <div class="updated" style="padding: 0; margin: 0; border: none; background: none;">
+      <div class="mgjp-mv-admin-notice">
+
+        <div class="mgjp-mv-admin-notice-logo">
+          <img alt="Media Vault logo" src="<?php echo plugins_url( 'imgs/media-vault-logo.png', __FILE__ ); ?>">
+        </div>
+
+        <?php if ( isset( $links ) ) : ?>
+          <div class="mgjp-mv-admin-notice-btn-box">
+
+            <?php $links = isset( $links['link'] ) ? array( $links ) : $links; ?>
+            <?php foreach ( $links as $link ) : ?>
+
+              <a class="mgjp-mv-admin-notice-button" href="<?php echo esc_url( $link['link'] ); ?>">
+                <?php echo esc_html( $link['text'] ); ?>
+              </a>
+
+            <?php endforeach; ?>
+
+          </div>
+        <?php endif; ?>
+
+        <div class="mgjp-mv-valign-outer">
+          <div class="mgjp-mv-valign-mid">
+            <div class="mgjp-mv-valign-inner mgjp-mv-admin-notice-desc">
+              <?php echo wp_kses( $desc, array( 'em' => array(), 'strong' => array() ), false ); ?>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  <?php
 }
-add_action( 'plugins_loaded', 'mgjp_mv_textdomain' );
-
-
-/**
- * Plugin update handling. Checks current version against
- * a version number stored in the database and performs any
- * necessary upgrades using the MGJP_MV_Update class which
- * extends the MGJP_Update class
- *
- * @since 0.8
- *
- * @uses MGJP_MV_Update
- */
-function mgjp_mv_check_version() {
-
-  $option_key = 'mgjp_mv_version';
-
-  $version_db = get_site_option( $option_key, '0' );
-
-  if ( version_compare( $version_db, MGJP_MV_VERSION, 'ge' ) )
-    return;
-
-  include_once( plugin_dir_path( __FILE__ ) . 'mv-class-update.php' );
-
-  if ( class_exists( 'MGJP_MV_Update' ) )
-    new MGJP_MV_Update( $version_db, MGJP_MV_VERSION, $option_key );
-
-}
-add_action( 'init', 'mgjp_mv_check_version' );
-
-
-/**
- * Function for the 'user_has_cap' WP Core filter. Checks the permissions set
- * on an attachment before making it available to a user to edit/delete/read.
- *
- * @since 0.7
- *
- * @uses mgjp_mv_check_user_permitted()
- * @param $allcaps array Array of all user capabilities
- * @param $cap array  [0] string capability required
- * @param $args array [0] string capability requested
- *                    [1] int user ID
- *                    [2] int post ID
- * @return array @param $allcaps unchanged if user permitted to access post
- * @return array @param $allcaps with capability @param $cap[0] set to false
- */
-function mgjp_mv_edit_capabilities( $allcaps, $cap, $args ) {
-
-  $disallowed_caps = array(
-    'edit_post',
-    'delete_post',
-    'read_post'
-  );
-
-  if ( ! in_array( $args[0], $disallowed_caps ) )
-    return $allcaps;
-
-  if ( ! isset( $args[2] ) )
-    return $allcaps;
-
-  // check if user is permitted to access the post
-  if ( mgjp_mv_check_user_permitted( $args[2] ) )
-    return $allcaps;
-
-  $allcaps[$cap[0]] = false;
-
-  return $allcaps;
-}
-add_filter( 'user_has_cap', 'mgjp_mv_edit_capabilities', 999, 3 );
-
-
-/**
- * Replace requested image with a Media Vault place-holder
- * if the user is not permitted to view them
- *
- * @since 0.8
- *
- * @param $img mixed false based on wp-includes/media.php or array if other filter has affected it
- * @param $attachment_id int ID of the attachment whose image is being requested
- * @param $size string name-id of the dimensions of the requested image
- * @return mixed return the $url if the image is not protected
- * @return array [0] string URL to the Media Vault replacement image of the requested size
- *               [1] string width of the Media Vault replacement image
- *               [2] string height of the Media Vault replacement image
- *               [3] bool whether the url is for a resized image or not
- */
-function mgjp_mv_replace_protected_image( $img, $attachment_id, $size ) {
-
-  $ir = get_option( 'mgjp_mv_ir' );
-
-  if ( ! isset( $ir['is_on'] ) || ! $ir['is_on'] )
-    return $img;
-
-  $upload_dir = wp_upload_dir();
-
-  if ( isset( $img[0] ) && 0 !== strpos( ltrim( $img[0], $upload_dir['baseurl'] ), mgjp_mv_upload_dir( '/', true ) ) )
-    return $img;
-
-  if ( mgjp_mv_check_user_permitted( $attachment_id ) )
-    return $img;
-
-  if ( isset( $ir['id'] ) && ! mgjp_mv_is_protected( $ir['id'] ) ) {
-
-    remove_filter( 'image_downsize', 'mgjp_mv_replace_protected_image', 999, 3 );
-    $placeholder = wp_get_attachment_image_src( $ir['id'], $size );
-    add_filter( 'image_downsize', 'mgjp_mv_replace_protected_image', 999, 3 );
-
-    return $placeholder;
-
-  } else {
-
-    list( $width, $height ) = image_constrain_size_for_editor( 1024, 1024, $size );
-
-    return array(
-      plugins_url( 'imgs/media-vault-ir.jpg', __FILE__ ),
-      $width,
-      $height,
-      false
-    );
-
-  }
-}
-add_filter( 'image_downsize', 'mgjp_mv_replace_protected_image', 999, 3 );
-
-
-/**
- * Include the Media Vault custom AJAX actions
- *
- * @since 0.8
- */
-function mgjp_mv_ajax_actions_include() {
-
-  if ( defined( 'DOING_AJAX' ) && DOING_AJAX )
-    include_once( plugin_dir_path( __FILE__ ) . 'mv-ajax-actions.php' );
-
-}
-add_action( 'admin_init', 'mgjp_mv_ajax_actions_include', 0 );
-
-
-/**
- * Include the plugin's general settings
- *
- * @since 0.4
- */
-function mgjp_mv_media_vault_options_include() {
-
-  include_once( plugin_dir_path( __FILE__ ) . 'mv-options-media-vault.php' );
-
-}
-add_action( 'admin_init', 'mgjp_mv_media_vault_options_include' );
-
-
-/**
- * Include the options for protected media uploads
- * on the 'media-new.php' admin page
- *
- * @since 0.2
- */
-function mgjp_mv_media_new_options_include() {
-
-  include_once( plugin_dir_path( __FILE__ ) . 'mv-options-media-new.php' );
-
-}
-add_action( 'load-media-new.php', 'mgjp_mv_media_new_options_include' );
-
-
-/**
- * Include the options for protected media uploads
- * on the 'upload.php' (Media Library) admin page
- *
- * @since 0.3
- */
-function mgjp_mv_media_library_options_include() {
-
-  include_once( plugin_dir_path( __FILE__ ) . 'mv-options-media-library.php' );
-
-}
-add_action( 'load-upload.php', 'mgjp_mv_media_library_options_include' );
-
-
-/**
- * Include the custom attachment metabox functions
- *
- * @since 0.7.1
- */
-function mgjp_mv_attachment_metabox_include() {
-
-  include_once( plugin_dir_path( __FILE__ ) . 'mv-metaboxes.php' );
-
-}
-add_action( 'admin_init', 'mgjp_mv_attachment_metabox_include' );
-
-
-/**
- * Change upload directory for media uploads to a protected
- * folder if the 'protected' post/get parameter has been set
- * during the upload process.
- *
- * @since 0.1
- *
- * @uses mgjp_mv_upload_dir()
- * @param $param array Array of path info for WP Upload Directory
- * @return array Array of path info for Media Vault protected directory
- */
-function mgjp_mv_change_upload_directory( $param ) {
-
-  if ( isset( $_POST['mgjp_mv_protected'] ) && 'on' == $_POST['mgjp_mv_protected'] ) {
-    $param['subdir'] = mgjp_mv_upload_dir( $param['subdir'], true );
-    $param['path']   = $param['basedir'] . $param['subdir'];
-    $param['url']    = $param['baseurl'] . $param['subdir'];
-  }
-
-  return $param;
-}
-add_filter( 'upload_dir', 'mgjp_mv_change_upload_directory', 999 );
-
-
-/**
- * Trigger protected media uploads file handling function
- * if 'file' GET parameter is set in URL on wp init
- *
- * @since 0.1
- *
- * @uses mgjp_mv_get_file()
- */
-function mgjp_mv_handle_media_access_and_download() {
-
-  if ( isset( $_GET['mgjp_mv_file'] ) && ! empty( $_GET['mgjp_mv_file'] ) ) {
-
-    include( plugin_dir_path( __FILE__ ) . 'mv-file-handler.php' );
-
-    // Check if force download flag is set
-    $force_download = isset( $_REQUEST['mgjp_mv_download'] ) ?
-                        $_REQUEST['mgjp_mv_download'] :
-                        '';
-
-    if ( function_exists( 'mgjp_mv_get_file' ) ) {
-      mgjp_mv_get_file( $_GET['mgjp_mv_file'], $force_download );
-      exit; // This exit is important as all we want to do when a
-            // media download is requested is to serve it and exit
-            // If it is missing WP will continue serving the page
-            // after the media file, thus breaking it
-    }
-  }
-}
-add_action( 'init', 'mgjp_mv_handle_media_access_and_download', 0 );
-
-
-/**
- * Register Media Vault Shortcodes
- *
- * @since 0.5
- */
-function mgjp_mv_register_shortcodes() {
-
-  include_once( plugin_dir_path( __FILE__ ) . 'mv-shortcodes.php' );
-
-  if ( function_exists( 'mgjp_mv_download_links_list_shortcode_handler' ) )
-    add_shortcode( 'mv_dl_links', 'mgjp_mv_download_links_list_shortcode_handler' );
-
-}
-add_action( 'init', 'mgjp_mv_register_shortcodes' );
-
-
-/**
- * Generate new rewrite rules to reroute requests for
- * media uploads within protected folders and requests 
- * for media uploads with the `safeforce` download flag
- * set, to the file-handling script
- *
- * @since 0.1
- *
- * @uses mgjp_mv_upload_dir()
- * @param $rules string String containing all rewrite rules to be written in htaccess
- * @return string String containing all rewrite rules to be written in htaccess
- *                including Media Vault custom rewrite rules
- */
-function mgjp_mv_add_plugin_rewrite_rules( $rules ) {
-
-  $home_root = parse_url( home_url() );
-  if ( isset( $home_root['path'] ) )
-    $home_root = trailingslashit( $home_root['path'] );
-  else
-    $home_root = '/';
-
-  $upload             = wp_upload_dir();
-  $uploads_path       = str_replace( site_url( '/' ), '', $upload['baseurl'] );
-  $old_path_protected = $uploads_path . '(' . mgjp_mv_upload_dir( '/.*\.\w+)$', true );
-  $old_path_downloads = $uploads_path . '(.*\.\w+)$';
-  $new_path           = $home_root . '?mgjp_mv_file=$1';
-
-  $plugin_rules = array(
-    '# Media Vault Rewrite Rules #',
-    'RewriteRule ^' . $old_path_protected . ' ' . $new_path . ' [QSA,L]',
-    'RewriteCond %{QUERY_STRING} ^(?:.*&)?mgjp_mv_download=safeforce(?:&.*)?$',
-    'RewriteRule ^' . $old_path_downloads . ' ' . $new_path . ' [QSA,L]',
-    '# Media Vault Rewrite Rules End #'
-  );
-
-  $pattern = "RewriteRule ^index\.php$ - [L]\n";
-
-  return str_replace( $pattern, $pattern . implode( "\n", $plugin_rules ) . "\n", $rules );
-}
-add_filter( 'mod_rewrite_rules', 'mgjp_mv_add_plugin_rewrite_rules' );
-
-
-/**
- * Add Media Vault settings link on plugins manager page
- *
- * @since 0.8
- *
- * @param $links array Array of links associated with plugin
- * @return array Array of links associated with plugin plus settings link
- */
-function mgjp_mv_settings_link( $links ) {
-
-  $settings_link = '<a href="options-media.php#uploads_use_yearmonth_folders">'
-    . esc_html__( 'Settings', 'media-vault' )
-    . '</a>';
-
-  array_push( $links, $settings_link );
-
-  return $links;
-}
-add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'mgjp_mv_settings_link' );
-
-
-/**
- * On plugin activation
- *
- * @since 0.1
- *
- * @uses mgjp_mv_default_options()
- */
-function mgjp_mv_activate() {
-
-  // register Media Vault site-wide options
-  add_site_option( 'mgjp_mv_version', MGJP_MV_VERSION, '', 'yes' );
-
-  // register Media Vault options to the local options table
-  add_option( 'mgjp_mv_default_permission', 'logged-in', '', 'yes' );
-
-  add_option( 'mgjp_mv_options', mgjp_mv_default_options(), '', 'no' );
-  add_option( 'mgjp_mv_ir', array( 'is_on' => true ), '', 'no' );
-
-  mgjp_mv_load_placeholder_image();
-
-  // Flush rewrite rules to add Media Vault rewrite rules to the
-  // site's .htaccess file on plugin activation
-  add_filter( 'mod_rewrite_rules', 'mgjp_mv_add_plugin_rewrite_rules' );
-  flush_rewrite_rules();
-}
-register_activation_hook( __FILE__, 'mgjp_mv_activate' );
-
-
-/**
- * On plugin deactivation
- *
- * @since 0.1
- */
-function mgjp_mv_deactivate() {
-
-  // unload default placeholder image if it exists
-  $ir = get_option( 'mgjp_mv_ir' );
-  if ( isset( $ir['default'] ) && wp_attachment_is_image( $ir['default'] ) )
-    wp_delete_attachment( $ir['default'], true );
-
-  // Flush rewrite rules to remove Media Vault rewrite rules from the
-  // site's .htaccess file on plugin deactivation
-  remove_filter( 'mod_rewrite_rules', 'mgjp_mv_add_plugin_rewrite_rules' );
-  flush_rewrite_rules();
-}
-register_deactivation_hook( __FILE__, 'mgjp_mv_deactivate' );
 
 ?>
