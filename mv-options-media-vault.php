@@ -44,7 +44,7 @@ add_settings_field(
     'option'    => 'mgjp_mv_options',
     'option_id' => 'default_upload_protection',
     'value'     => 'on',
-    'desc'      => __( 'Set media file upload protection to be enabled by default when uploading new files.', 'media-vault' )
+    'desc'      => __( 'Set media file upload protection to be enabled by default when uploading new files through the Add New Media page in the WordPress Admin.', 'media-vault' )
   )
 );
 
