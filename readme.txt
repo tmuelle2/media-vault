@@ -1,7 +1,7 @@
 === Media Vault ===
 Contributors: Max GJP
 Donate Link:
-Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images
+Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images, multisite, files, links
 Requires at least: 3.5.0
 Tested up to: 3.7.1
 Stable tag: 0.8.5
