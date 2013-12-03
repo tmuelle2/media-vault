@@ -90,7 +90,7 @@ class MGJP_MV_Update {
     if ( ! $this->force_reload )
       return;
 
-    $current_url = esc_url_raw( '//' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ) );
+    $current_url = esc_url_raw( '//' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] );
 
     if ( headers_sent() )
       echo '<meta http-equiv="refresh" content="' . esc_attr( "0;url=$current_url" ) . '" />';
