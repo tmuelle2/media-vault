@@ -6,7 +6,7 @@ Description: Protect attachment files from direct access using powerful and flex
 Network: true
 Text Domain: media-vault
 Domain Path: /languages
-Version: 0.8.5
+Version: 0.8.6
 Author: Max GJ Panas
 Author URI: http://maxpanas.com
 License: GPLv3 or later
@@ -701,8 +701,11 @@ function _mgjp_mv_deactivate_local( $blog_id = 0 ) {
  */
 function mgjp_mv_get_dirfile() {
 
-  $plugin_dir  = explode( '/', plugin_basename( __FILE__ ) )[0];
-  $plugin_file = array_keys( get_plugins( "/$plugin_dir" ) )[0];
+  $plugin_dir  = explode( '/', plugin_basename( __FILE__ ) );
+  $plugin_dir  = $plugin_dir[0];
+
+  $plugin_file = array_keys( get_plugins( "/$plugin_dir" ) );
+  $plugin_file = $plugin_file[0];
 
   return "$plugin_dir/$plugin_file";
 }
