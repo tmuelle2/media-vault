@@ -4,7 +4,7 @@ Donate Link:
 Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images, multisite, files, links
 Requires at least: 3.5.0
 Tested up to: 3.7.1
-Stable tag: 0.8.5
+Stable tag: 0.8.6
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -83,6 +83,9 @@ Yes they can, see [this support question](http://wordpress.org/support/topic/def
 
 == Changelog ==
 
+= 0.8.6 =
+fixed code that required php 5.4 and above, to be compatible with older versions of php
+
 = 0.8.5 =
 
 * Now the plugin is not fully enabled if the rewrite rules are detected to not be fully functioning as required
@@ -119,6 +122,9 @@ The Metabox - added a Media Vault metabox to the attachment editor screen to man
 Initial Release.
 
 == Upgrade Notice ==
+
+= 0.8.6 =
+fixed code that required php 5.4 and above, to be compatible with older versions of php
 
 = 0.8.5 =
 The WPMU update - more organized code, now 90% more optimized to run fine both on single-site installs as well as multisite installs.
