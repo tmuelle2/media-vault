@@ -28,27 +28,29 @@
     }
   }
 }
-.mp6 #plupload-upload-ui {
-  .mgjp-mv-tag {
-    margin-left: -108px;
-    border: none;
-    border-radius: 0;
-    padding: 10px 20px 10px 15px;
-    color: #eee;
-    background: #333;
-    .mgjp-mv-tag-icon {
-      background: none;
-      height: auto;
-      width: auto;
-      &:before {
-        content: '\f160';
-        font: normal 18px/1 'dashicons' !important;
-        speak: none;
-        color: #999;
-        height: 20px;
-        width: 20px;
-        vertical-align: top;
-        -webkit-font-smoothing: antialiased;
+.mp6, .mgjp_mp6 {
+  #plupload-upload-ui {
+    .mgjp-mv-tag {
+      margin-left: -108px;
+      border: none;
+      border-radius: 0;
+      padding: 10px 20px 10px 15px;
+      color: #eee;
+      background: #333;
+      .mgjp-mv-tag-icon {
+        background: none;
+        height: auto;
+        width: auto;
+        &:before {
+          content: '\f160';
+          font: normal 18px/1 'dashicons' !important;
+          speak: none;
+          color: #999;
+          height: 20px;
+          width: 20px;
+          vertical-align: top;
+          -webkit-font-smoothing: antialiased;
+        }
       }
     }
   }

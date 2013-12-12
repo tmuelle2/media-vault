@@ -6,7 +6,7 @@ Description: Protect attachment files from direct access using powerful and flex
 Network: true
 Text Domain: media-vault
 Domain Path: /languages
-Version: 0.8.5
+Version: 0.8.7
 Author: Max GJ Panas
 Author URI: http://maxpanas.com
 License: GPLv3 or later
@@ -29,7 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 // define current plugin version constant
-define( 'MGJP_MV_VERSION', '0.8.5' );
+define( 'MGJP_MV_VERSION', '0.8.7' );
 
 
 /**
@@ -102,6 +102,8 @@ if ( get_site_option( 'mgjp_mv_enabled' ) ) {
 
     add_action( 'load-media-new.php', 'mgjp_mv_media_new_options_include' );
     add_action( 'load-upload.php', 'mgjp_mv_media_library_options_include' );
+
+    add_filter( 'admin_body_class', 'mgjp_add_mp6_admin_body_class' );
 
     add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'mgjp_mv_settings_link' );
 
@@ -399,26 +401,6 @@ function mgjp_mv_register_shortcodes() {
 
 
 /**
- * Add Media Vault settings link on plugins manager page
- *
- * @since 0.8
- *
- * @param $links array Array of links associated with plugin
- * @return array Array of links associated with plugin plus settings link
- */
-function mgjp_mv_settings_link( $links ) {
-
-  $settings_link = '<a href="options-media.php#mgjp_mv_settings_section">'
-    . esc_html__( 'Settings', 'media-vault' )
-    . '</a>';
-
-  array_push( $links, $settings_link );
-
-  return $links;
-}
-
-
-/**
  * Add the plugin rewrite rules to the WP rewrite
  * rules being written in the sitewide .htaccess file
  *
@@ -615,6 +597,48 @@ function mgjp_mv_media_library_options_include() {
 }
 
 
+/**
+ * Add Media Vault flag to enable 
+ * Media Vault mp6 styles for WP 3.8+
+ *
+ * @since 0.8.7
+ *
+ * @param $classes string admin body classes
+ * @return string admin body classes
+ */
+if ( ! function_exists( 'mgjp_add_mp6_admin_body_class' ) ) {
+  function mgjp_add_mp6_admin_body_class( $classes ) {
+
+    global $wp_version;
+
+    if ( version_compare( $wp_version, '3.8', 'lt' ) )
+      return $classes;
+
+    return $classes . ' mgjp_mp6 ';
+  }
+}
+
+
+/**
+ * Add Media Vault settings link on plugins manager page
+ *
+ * @since 0.8
+ *
+ * @param $links array Array of links associated with plugin
+ * @return array Array of links associated with plugin plus settings link
+ */
+function mgjp_mv_settings_link( $links ) {
+
+  $settings_link = '<a href="options-media.php#mgjp_mv_settings_section">'
+    . esc_html__( 'Settings', 'media-vault' )
+    . '</a>';
+
+  array_push( $links, $settings_link );
+
+  return $links;
+}
+
+
 
 //-----------------------------------------------------------------------//
 // MEDIA VAULT - GENERAL FUNCTIONS
@@ -701,8 +725,11 @@ function _mgjp_mv_deactivate_local( $blog_id = 0 ) {
  */
 function mgjp_mv_get_dirfile() {
 
-  $plugin_dir  = explode( '/', plugin_basename( __FILE__ ) )[0];
-  $plugin_file = array_keys( get_plugins( "/$plugin_dir" ) )[0];
+  $plugin_dir  = explode( '/', plugin_basename( __FILE__ ) );
+  $plugin_dir  = $plugin_dir[0];
+
+  $plugin_file = array_keys( get_plugins( "/$plugin_dir" ) );
+  $plugin_file = $plugin_file[0];
 
   return "$plugin_dir/$plugin_file";
 }
