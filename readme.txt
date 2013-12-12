@@ -1,10 +1,10 @@
 === Media Vault ===
 Contributors: Max GJP
 Donate Link:
-Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images, multisite, files, links
+Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images, multisite, files, links, private, documents
 Requires at least: 3.5.0
-Tested up to: 3.7.1
-Stable tag: 0.8.6
+Tested up to: 3.8.0
+Stable tag: 0.8.7
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
