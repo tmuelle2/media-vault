@@ -37,7 +37,7 @@ The download links are available through a simple shortcode that you can use in 
 where 'ids' are the comma separated list of attachment ids you would like to make available for download in the list.
 
 
-*Note:* Plugin comes with styles ready for WordPress [mp6](http://wordpress.org/plugins/mp6)!
+*Note:* Plugin comes with styles ready for WordPress 3.8+!
 
 *Note:*  **Now supports WordPress MultiSite!**
 
@@ -83,6 +83,9 @@ Yes they can, see [this support question](http://wordpress.org/support/topic/def
 
 == Changelog ==
 
+= 0.8.7 =
+added a body class to the WP admin to let Media Vault know to use the new 3.8+ styles
+
 = 0.8.6 =
 fixed code that required php 5.4 and above, to be compatible with older versions of php
 
@@ -122,6 +125,9 @@ The Metabox - added a Media Vault metabox to the attachment editor screen to man
 Initial Release.
 
 == Upgrade Notice ==
+
+= 0.8.7 =
+added a body class to the WP admin to let Media Vault know to use the new 3.8+ styles
 
 = 0.8.6 =
 fixed code that required php 5.4 and above, to be compatible with older versions of php
