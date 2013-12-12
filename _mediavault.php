@@ -611,7 +611,7 @@ if ( ! function_exists( 'mgjp_add_mp6_admin_body_class' ) ) {
 
     global $wp_version;
 
-    if ( version_compare( $wp_version, '3.8', 'lt' ) )
+    if ( version_compare( '3.7.5', $wp_version, '>' ) )
       return $classes;
 
     return $classes . ' mgjp_mp6 ';

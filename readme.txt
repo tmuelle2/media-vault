@@ -37,7 +37,7 @@ The download links are available through a simple shortcode that you can use in 
 where 'ids' are the comma separated list of attachment ids you would like to make available for download in the list.
 
 
-*Note:* Plugin comes with styles ready for WordPress [mp6](http://wordpress.org/plugins/mp6)!
+*Note:* Plugin comes with styles ready for WordPress 3.8+!
 
 *Note:*  **Now supports WordPress MultiSite!**
 
