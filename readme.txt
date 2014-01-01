@@ -84,7 +84,7 @@ Yes they can, see [this support question](http://wordpress.org/support/topic/def
 == Changelog ==
 
 = 0.8.8 =
-fixed bug in `mv-file-handler.php` that allowed files to be viewed in the protected folder when 'Save uploads in year/month folders' was *not* selected. Thanks to <a href="http://wordpress.org/support/profile/wayneharris">WayneHarris</a> for pointing the issue out.
+fixed bug in `mv-file-handler.php` that allowed files to be viewed in the protected folder when 'Save uploads in year/month folders' was *not* selected. Thanks to [WayneHarris](http://wordpress.org/support/profile/wayneharris) for pointing the issue out.
 
 = 0.8.7 =
 added a body class to the WP admin to let Media Vault know to use the new 3.8+ styles
@@ -130,7 +130,7 @@ Initial Release.
 == Upgrade Notice ==
 
 = 0.8.8 =
-fixed bug in `mv-file-handler.php` that allowed files to be viewed in the protected folder when 'Save uploads in year/month folders' was *not* selected. Thanks to <a href="http://wordpress.org/support/profile/wayneharris">WayneHarris</a> for pointing the issue out.
+fixed bug in `mv-file-handler.php` that allowed files to be viewed in the protected folder when 'Save uploads in year/month folders' was *not* selected. Thanks to [WayneHarris](http://wordpress.org/support/profile/wayneharris) for pointing the issue out.
 
 = 0.8.7 =
 added a body class to the WP admin to let Media Vault know to use the new 3.8+ styles
