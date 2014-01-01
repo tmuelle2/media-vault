@@ -57,7 +57,7 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
   // check if file is protected by checking
   // if it is in the protected folder before
   // doing any permission checks
-  if ( 0 === stripos( $file_info['dirname'], mgjp_mv_upload_dir( '/', true ) ) ) {
+  if ( 0 === stripos( $file_info['dirname'] . '/', mgjp_mv_upload_dir( '/', true ) ) ) {
 
     // disable caching of this page by caching plugins ------//
     if ( ! defined( 'DONOTCACHEPAGE' ) )
