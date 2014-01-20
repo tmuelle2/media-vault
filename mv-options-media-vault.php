@@ -301,7 +301,7 @@ function mgjp_mv_options_media_enqueue_scripts() {
     return;
 
   wp_enqueue_media();
-  wp_enqueue_script( 'mgjp-image-selector', plugins_url( 'js/mv-image-selector.min.js', __FILE__ ), array( 'jquery', 'json2' ), null, true );
+  wp_enqueue_script( 'mgjp-image-selector', plugins_url( 'js/min/mv-image-selector.min.js', __FILE__ ), array( 'jquery', 'json2' ), null, true );
 
 }
 add_action( 'admin_enqueue_scripts', 'mgjp_mv_options_media_enqueue_scripts' );

@@ -1,6 +1,6 @@
 === Media Vault ===
 Contributors: Max GJP
-Donate Link:
+Donate Link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=6KFT65LQXEHFQ
 Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images, multisite, files, links, private, documents
 Requires at least: 3.5.0
 Tested up to: 3.8.0
@@ -19,10 +19,11 @@ Media Vault cordons off a section of your WordPress uploads folder and secures i
 After activating the plugin, to protect attachment files with Media Vault you can:
 
 * use the *Media Uploader admin page* to upload new protected attachments,
-* use the *Media Vault metabox* to toggle file protection on the 'Edit Media' admin page, or,
+* use the *Media Vault metabox* to toggle file protection on the 'Edit Media' admin page,
+* use the the *Media Vault Protection Settings* fields in the new Media Modal, or, 
 * using *bulk actions* in your Media Library page, you can change file protection on multiple pre-existing attachments at once.
 
-By default the only permission check that the plugin does on media files is that the user requesting them be logged in. You can change this default behavior from the 'Media Settings' page in the 'Settings' menu of the WordPress Admin. You can also change the restrictions set on attachments on an individual basis by means of the Media Vault metabox on the 'Edit Media' page.
+By default the only permission check that the plugin does on media files is that the user requesting them be logged in. You can change this *default* behavior from the 'Media Settings' page in the 'Settings' menu of the WordPress Admin. You can also change the restrictions set on attachments on an individual basis by means of either the Media Vault metabox on the 'Edit Media' page or the Media Vault Protection Settings fields in the new Media Modal.
 
 You can also write your own custom restrictions using the `mgjp_mv_add_permission()` function. See [this support question](http://wordpress.org/support/topic/restrict-only-for-subscribers?replies=5) for more details.
 
@@ -83,6 +84,12 @@ Yes they can, see [this support question](http://wordpress.org/support/topic/def
 
 == Changelog ==
 
+= 0.8.9 =
+
+* Added Attachment Edit fields to the new Media Modal to make it easier to manage which files are protected with Media Vault and what permissions are set on each protected file.
+* Fixed visual bug with IE8 and the general sibling selector not showing permissions in the Media Vault Metabox on the attachment edit admin page.
+* Organized minified js code into seperate folder
+
 = 0.8.8 =
 fixed bug in `mv-file-handler.php` that allowed files to be viewed in the protected folder when 'Save uploads in year/month folders' was *not* selected. Thanks to [WayneHarris](http://wordpress.org/support/profile/wayneharris) for pointing the issue out.
 
@@ -128,6 +135,9 @@ The Metabox - added a Media Vault metabox to the attachment editor screen to man
 Initial Release.
 
 == Upgrade Notice ==
+
+= 0.8.9 =
+Added Attachment Edit Fields to the new Media Modal and fixed visual bug with IE8
 
 = 0.8.8 =
 fixed bug in `mv-file-handler.php` that allowed files to be viewed in the protected folder when 'Save uploads in year/month folders' was *not* selected. Thanks to [WayneHarris](http://wordpress.org/support/profile/wayneharris) for pointing the issue out.
