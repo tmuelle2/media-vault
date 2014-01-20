@@ -21,19 +21,35 @@ add_meta_box(
 
 
 /**
+ * Enqueue metabox styles in head of attachment
+ * edit page
+ *
+ * @since 0.8.9
+ */
+function mgjp_mv_attachment_protection_metabox_styles_and_scripts() {
+
+  $screen = get_current_screen();
+  if ( 'attachment' !== $screen->id )
+    return;
+
+  // enqueue metabox styles
+  wp_enqueue_style( 'mgjp-mv-att-edit-css', plugins_url( 'css/mv-attachment-edit.css', __FILE__ ), 'all', null );
+
+}
+add_action( 'wp_enqueue_scripts', 'mgjp_mv_attachment_protection_metabox_styles_and_scripts' );
+
+
+/**
  * Rendering function for the Media Vault attachment
  * metabox
  *
  * @since 0.7.1
  *
- * @uses mgjp_mv_get_the_permission()
  * @uses mgjp_mv_get_the_permissions()
+ * @uses mgjp_mv_is_protected()
  * @param $post object WP_Post object of current attachment
  */
 function mgjp_mv_render_attachment_protection_metabox( $post ) {
-
-  // enqueue metabox styles
-  wp_enqueue_style( 'mgjp-mv-attachment-edit-styles', plugins_url( 'css/mv-attachment-edit.css', __FILE__ ), 'all', null );
 
 
   wp_nonce_field( 'mgjp_mv_protection_metabox', 'mgjp_mv_protection_metabox_nonce' );
@@ -44,33 +60,35 @@ function mgjp_mv_render_attachment_protection_metabox( $post ) {
   $permissions = mgjp_mv_get_the_permissions();
 
   if ( empty( $permission ) || ! isset( $permissions[$permission] ) )
-    $permission = 'default'; ?>
+    $permission = 'default';
+
+  $default    = array(
+    'default' => array(
+      'select' => __( 'Use Default Setting', 'media-vault' )
+    )
+  );
+  $permissions = $default + $permissions; ?>
+
+  <!--[if lt IE 9]>
+    <script async src="<?php echo esc_url( plugins_url( 'js/min/mv-attachment-edit-ltIE9.min.js', __FILE__ ) ); ?>"></script>
+  <![endif]-->
 
   <input type="hidden" name="mgjp_mv_protection_toggle" value="off">
   <input type="checkbox" id="mgjp_mv_protection_toggle" name="mgjp_mv_protection_toggle" <?php checked( mgjp_mv_is_protected( $post->ID ) ); ?>>
 
   <label class="mgjp-mv-protection-toggle" for="mgjp_mv_protection_toggle">
-
     <span aria-role="hidden" class="mgjp-on button button-primary" data-mgjp-content="<?php esc_attr_e( 'Add to Protected', 'media-vault' ); ?>"></span>
     <span aria-role="hidden" class="mgjp-off" data-mgjp-content="<?php esc_attr_e( 'Remove from Protected', 'media-vault' ); ?>"></span>
 
     <span class="visuallyhidden"><?php esc_html_e( 'Protect this attachment\'s files with Media Vault.', 'media-vault' ); ?></span>
-
   </label>
 
   <p class="mgjp-mv-permission-select">
-
     <label for="mgjp_mv_permission_select">
-
       <span class="description"><?php esc_html_e( 'File access permission', 'media-vault' ); ?></span>
-
     </label>
 
     <select id="mgjp_mv_permission_select" name="mgjp_mv_permission_select">
-
-      <option value="default" <?php selected( $permission, 'default' ); ?>>
-        <?php esc_html_e( 'Use Default Setting', 'media-vault' ); ?>
-      </option>
 
       <?php foreach ( $permissions as $key => $data ) : ?>
 
@@ -81,7 +99,6 @@ function mgjp_mv_render_attachment_protection_metabox( $post ) {
       <?php endforeach; ?>
 
     </select>
-
   </p>
 
   <?php
@@ -96,7 +113,9 @@ function mgjp_mv_render_attachment_protection_metabox( $post ) {
  *
  * @global $post WP_Post object of current post
  *
- * @uses mgjp_move_attachment_files()
+ * @uses mgjp_mv_move_attachment_from_protected()
+ * @uses mgjp_mv_move_attachment_to_protected()
+ * @uses mgjp_mv_get_the_permissions()
  * @return void if any of the validations fail
  */
 function mgjp_mv_save_attachment_metabox_data() {

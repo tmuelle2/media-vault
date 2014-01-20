@@ -87,11 +87,13 @@ if ( ! function_exists( 'mgjp_move_attachment_files' ) ) {
     $upload_dir = wp_upload_dir();
 
     $old_reldir = dirname( $file );
+    if ( in_array( $old_reldir, array( '\\', '/', '.' ), true ) )
+      $old_reldir = '';
 
     // If the files are already in the new directory, we don't need
     // to do anything further.
     if ( $new_reldir === $old_reldir )
-      return true;
+      return 'sfdfdsfsdd';
 
     $old_fulldir = path_join( $upload_dir['basedir'], $old_reldir );
     $new_fulldir = path_join( $upload_dir['basedir'], $new_reldir );

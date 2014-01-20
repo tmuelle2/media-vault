@@ -6,7 +6,7 @@ Description: Protect attachment files from direct access using powerful and flex
 Network: true
 Text Domain: media-vault
 Domain Path: /languages
-Version: 0.8.7
+Version: 0.8.9
 Author: Max GJ Panas
 Author URI: http://maxpanas.com
 License: GPLv3 or later
@@ -28,8 +28,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 
+
 // define current plugin version constant
-define( 'MGJP_MV_VERSION', '0.8.7' );
+define( 'MGJP_MV_VERSION', '0.8.9' );
 
 
 /**
@@ -83,8 +84,10 @@ add_action( 'load-plugins.php', 'mgjp_mv_on_deactivation_request' );
 
 if ( get_site_option( 'mgjp_mv_enabled' ) ) {
 
-  add_action( 'init', 'mgjp_mv_handle_media_access_and_download', 0 );
+  add_action( 'init', 'mgjp_mv_handle_file_request', 0 );
   add_action( 'init', 'mgjp_mv_register_shortcodes' );
+
+  add_action( 'wp_enqueue_media', 'mgjp_mv_attachment_edit_fields_styles_and_scripts' );
 
   add_filter( 'mod_rewrite_rules', 'mgjp_mv_add_plugin_rewrite_rules' );
 
@@ -358,7 +361,7 @@ function mgjp_mv_on_deactivation_request() {
  *
  * @uses mgjp_mv_get_file()
  */
-function mgjp_mv_handle_media_access_and_download() {
+function mgjp_mv_handle_file_request() {
 
   if ( isset( $_GET['mgjp_mv_file'] ) && ! empty( $_GET['mgjp_mv_file'] ) ) {
 
@@ -396,6 +399,22 @@ function mgjp_mv_register_shortcodes() {
 
   if ( function_exists( 'mgjp_mv_download_links_list_shortcode_handler' ) )
     add_shortcode( 'mv_dl_links', 'mgjp_mv_download_links_list_shortcode_handler' );
+
+}
+
+
+/**
+ * Enqueue styles and scripts for Media Vault
+ * attachment edit fields.
+ *
+ * @hook action 'wp_enqueue_media'
+ *
+ * @since 0.8.8
+ */
+function mgjp_mv_attachment_edit_fields_styles_and_scripts() {
+
+  wp_enqueue_style( 'mgjp-mv-att-fields-css', plugins_url( 'css/mv-attachment-fields.css', __FILE__ ), 'all', null );
+  wp_enqueue_script( 'mgjp-mv-att-fields-js', plugins_url( 'js/min/mv-attachment-fields.min.js', __FILE__ ), array( 'media-editor' ), null, true );
 
 }
 
@@ -783,7 +802,7 @@ function mgjp_mv_get_the_rewrite_rules() {
     $uploads_path = '(?:[_0-9a-zA-Z-]+/)?' . $uploads_path;
 
   $old_path_protected = $uploads_path . '(' . mgjp_mv_upload_dir( '/.*\.\w+)$', true );
-  $old_path_downloads = $uploads_path . '(.*\.\w+)$';
+  $old_path_downloads = $uploads_path . '(/.*\.\w+)$';
 
   $rewrite_rules = array(
     '# Media Vault Rewrite Rules',
@@ -817,8 +836,8 @@ function mgjp_mv_get_the_rewrite_rules() {
 }
 
 /**
- * Check if .htaccess rules have been configured correctly
- * Don't call on init! - it makes **at least** two http
+ * Check if request rewrite rules have been configured correctly
+ * Don't call on every init! - it makes **at least** two http
  * requests every time it is called!
  *
  * @since 0.8.5
@@ -1113,7 +1132,11 @@ function mgjp_mv_move_attachment_to_protected( $attachment_id ) {
   if ( 0 === stripos( $file, mgjp_mv_upload_dir( '/' ) ) )
     return true;
 
-  $new_reldir = path_join( mgjp_mv_upload_dir(), dirname( $file ) );
+  $reldir = dirname( $file );
+  if ( in_array( $reldir, array( '\\', '/', '.' ), true ) )
+    $reldir = '';
+
+  $new_reldir = path_join( mgjp_mv_upload_dir(), $reldir );
 
   require_once( plugin_dir_path( __FILE__ ) . 'includes/mgjp-functions.php' );
 
