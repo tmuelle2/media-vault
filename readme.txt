@@ -4,7 +4,7 @@ Donate Link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images, multisite, files, links, private, documents
 Requires at least: 3.5.0
 Tested up to: 3.8.0
-Stable tag: 0.8.9
+Stable tag: 0.8.10
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -84,6 +84,9 @@ Yes they can, see [this support question](http://wordpress.org/support/topic/def
 
 == Changelog ==
 
+= 0.8.10 =
+Fixed typo causing php error in `mv-extra-activation-steps.php`. Thank you user [wwn2013](http://wordpress.org/support/profile/wwn2013) for pointing it out!
+
 = 0.8.9 =
 
 * Added Attachment Edit fields to the new Media Modal to make it easier to manage which files are protected with Media Vault and what permissions are set on each protected file.
@@ -135,6 +138,9 @@ The Metabox - added a Media Vault metabox to the attachment editor screen to man
 Initial Release.
 
 == Upgrade Notice ==
+
+= 0.8.10 =
+Fixed typo causing php error in `mv-extra-activation-steps.php`. Thank you user [wwn2013](http://wordpress.org/support/profile/wwn2013) for pointing it out!
 
 = 0.8.9 =
 Added Attachment Edit Fields to the new Media Modal and fixed visual bug with IE8
