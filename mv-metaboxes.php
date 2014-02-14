@@ -36,7 +36,7 @@ function mgjp_mv_attachment_protection_metabox_styles_and_scripts() {
   wp_enqueue_style( 'mgjp-mv-att-edit-css', plugins_url( 'css/mv-attachment-edit.css', __FILE__ ), 'all', null );
 
 }
-add_action( 'wp_enqueue_scripts', 'mgjp_mv_attachment_protection_metabox_styles_and_scripts' );
+add_action( 'admin_enqueue_scripts', 'mgjp_mv_attachment_protection_metabox_styles_and_scripts' );
 
 
 /**
@@ -111,17 +111,13 @@ function mgjp_mv_render_attachment_protection_metabox( $post ) {
  *
  * @since 0.7.1
  *
- * @global $post WP_Post object of current post
- *
  * @uses mgjp_mv_move_attachment_from_protected()
  * @uses mgjp_mv_move_attachment_to_protected()
  * @uses mgjp_mv_get_the_permissions()
+ * @param $attachment_id the id of the current attachment
  * @return void if any of the validations fail
  */
-function mgjp_mv_save_attachment_metabox_data() {
-
-  global $post;
-  $attachment_id = $post->ID;
+function mgjp_mv_save_attachment_metabox_data( $attachment_id ) {
 
   if( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE )
     return;

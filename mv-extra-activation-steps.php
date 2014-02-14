@@ -237,7 +237,7 @@ function mgjp_mv_render_extra_activation_steps_page() {
             </p>
             <form method="post" action="plugins.php?page=mgjp-mv-eas">
               <?php wp_nonce_field( 'mgjp_mv_enable_media_vault' ); ?>
-              <?php submit_button( _( 'Enable Media Vault', 'media-vault' ), 'primary', 'enable_mediavault', false ); ?>
+              <?php submit_button( __( 'Enable Media Vault', 'media-vault' ), 'primary', 'enable_mediavault', false ); ?>
             </form>
           </li>
 
