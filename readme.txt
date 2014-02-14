@@ -4,7 +4,7 @@ Donate Link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images, multisite, files, links, private, documents
 Requires at least: 3.5.0
 Tested up to: 3.8.1
-Stable tag: 0.8.10
+Stable tag: 0.8.11
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -76,6 +76,10 @@ You can verify that the action took effect by looking at the Media Vault column 
 
 Yes they can, see [this support question](http://wordpress.org/support/topic/default-upload-protection-from-front-end?replies=5) for more details!
 
+= How are unprotected files handled? How does this plugin work? =
+
+This question was recently asked and answered in [this support thread](https://wordpress.org/support/topic/how-the-unprotected-files-are-handeled?replies=3), check it out!
+
 == Screenshots ==
 
 1. The WordPress Media Upload page with Media Vault file protection activated.
@@ -84,8 +88,13 @@ Yes they can, see [this support question](http://wordpress.org/support/topic/def
 
 == Changelog ==
 
+= 0.8.11 =
+
+* fixed bug in `mv-metaboxes.php` causing php Notice. Thank you user [ikivanov](http://profiles.wordpress.org/ikivanov) for pointing it out!
+* fixed bug in `mv-metaboxes.php` causing metabox stylesheet not to be served
+
 = 0.8.10 =
-Fixed typo causing php error in `mv-extra-activation-steps.php`. Thank you user [wwn2013](http://wordpress.org/support/profile/wwn2013) for pointing it out!
+Fixed typo causing php error in `mv-extra-activation-steps.php`. Thank you user [wwn2013](http://profiles.wordpress.org/wwn2013) for pointing it out!
 
 = 0.8.9 =
 
@@ -94,7 +103,7 @@ Fixed typo causing php error in `mv-extra-activation-steps.php`. Thank you user 
 * Organized minified js code into seperate folder
 
 = 0.8.8 =
-fixed bug in `mv-file-handler.php` that allowed files to be viewed in the protected folder when 'Save uploads in year/month folders' was *not* selected. Thanks to [WayneHarris](http://wordpress.org/support/profile/wayneharris) for pointing the issue out.
+fixed bug in `mv-file-handler.php` that allowed files to be viewed in the protected folder when 'Save uploads in year/month folders' was *not* selected. Thanks to [WayneHarris](http://profiles.wordpress.org/wayneharris) for pointing the issue out.
 
 = 0.8.7 =
 added a body class to the WP admin to let Media Vault know to use the new 3.8+ styles
@@ -139,14 +148,17 @@ Initial Release.
 
 == Upgrade Notice ==
 
+= 0.8.11 =
+fixed bug in `mv-metaboxes.php` causing php Notice. Thank you user [ikivanov](http://profiles.wordpress.org/ikivanov) for pointing it out!
+
 = 0.8.10 =
-Fixed typo causing php error in `mv-extra-activation-steps.php`. Thank you user [wwn2013](http://wordpress.org/support/profile/wwn2013) for pointing it out!
+fixed typo causing php error in `mv-extra-activation-steps.php`. Thank you user [wwn2013](http://profiles.wordpress.org/wwn2013) for pointing it out!
 
 = 0.8.9 =
 Added Attachment Edit Fields to the new Media Modal and fixed visual bug with IE8
 
 = 0.8.8 =
-fixed bug in `mv-file-handler.php` that allowed files to be viewed in the protected folder when 'Save uploads in year/month folders' was *not* selected. Thanks to [WayneHarris](http://wordpress.org/support/profile/wayneharris) for pointing the issue out.
+fixed bug in `mv-file-handler.php` that allowed files to be viewed in the protected folder when 'Save uploads in year/month folders' was *not* selected. Thanks to [WayneHarris](http://profiles.wordpress.org/wayneharris) for pointing the issue out.
 
 = 0.8.7 =
 added a body class to the WP admin to let Media Vault know to use the new 3.8+ styles
