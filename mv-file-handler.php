@@ -194,7 +194,9 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
   }
 
   // If we made it this far, just serve the file
-  ob_clean();
+  if ( ob_get_length() )
+    ob_clean();
+
   flush();
 
   readfile( $file );

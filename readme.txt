@@ -4,7 +4,7 @@ Donate Link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: media, security, protection, attachments, downloads, download links, powerful, shortcode, flexible, simple, uploads, images, multisite, files, links, private, documents
 Requires at least: 3.5.0
 Tested up to: 3.8.1
-Stable tag: 0.8.11
+Stable tag: 0.8.12
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -88,6 +88,9 @@ This question was recently asked and answered in [this support thread](https://w
 
 == Changelog ==
 
+= 0.8.12 =
+fixed bug in `mv-file-handler.php` causing php Notice and corrupted files. Big thanks to user [ikivanov](http://profiles.wordpress.org/ikivanov) for pointing it out and providing the solution!
+
 = 0.8.11 =
 
 * fixed bug in `mv-metaboxes.php` causing php Notice. Thank you user [ikivanov](http://profiles.wordpress.org/ikivanov) for pointing it out!
@@ -147,6 +150,9 @@ The Metabox - added a Media Vault metabox to the attachment editor screen to man
 Initial Release.
 
 == Upgrade Notice ==
+
+= 0.8.12 =
+fixed bug in `mv-file-handler.php` causing php Notice and corrupted files. Big thanks to user [ikivanov](http://profiles.wordpress.org/ikivanov) for pointing it out and providing the solution!
 
 = 0.8.11 =
 fixed bug in `mv-metaboxes.php` causing php Notice. Thank you user [ikivanov](http://profiles.wordpress.org/ikivanov) for pointing it out!
