@@ -36,8 +36,6 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
 
   //---Basic Checks----------------------------------------------------//
 
-  error_log('Media Vault handling getting file: ' . $rel_file . '  Upload dir: ' . print_r($upload_dir, true) . ' File: ' . $file);
-
   if ( ! $upload_dir['basedir'] || ! is_file( $file ) ) {
     status_header( 404 );
     wp_die( '404. File not found.' );
@@ -55,6 +53,8 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
   //---Permission Checks-----------------------------------------------//
 
   $file_info = pathinfo( $rel_file );
+
+  error_log('File info: ' . print_r($file_info, true) . ' MV upload dir: ' . mgjp_mv_upload_dir( '/', true ));
 
   // check if file is protected by checking
   // if it is in the protected folder before
