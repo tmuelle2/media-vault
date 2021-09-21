@@ -24,7 +24,6 @@
  * @param string $action Force Download Flag, only acceptable value is 'safeforce'
  */
 function mgjp_mv_get_file( $rel_file, $action = '' ) {
-  error_log('Media Vault handling getting file: ' . $rel_file);
 
   // $rel_file = path to the file to view/download, 
               // relative to the WP uploads folder
@@ -36,6 +35,8 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
   $file = rtrim( $upload_dir['basedir'], '/' ) . str_replace( '..', '', isset( $rel_file ) ? $rel_file : '' );
 
   //---Basic Checks----------------------------------------------------//
+
+  error_log('Media Vault handling getting file: ' . $rel_file . '  Upload dir: ' . print_r($upload_dir, true));
 
   if ( ! $upload_dir['basedir'] || ! is_file( $file ) ) {
     status_header( 404 );
