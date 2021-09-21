@@ -54,12 +54,12 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
 
   $file_info = pathinfo( $rel_file );
 
-  error_log('File info: ' . print_r($file_info, true) . ' MV upload dir: ' . mgjp_mv_upload_dir( '/', true ));
+  error_log('File info: ' . print_r($file_info, true) . ' MV upload dir: ' . mgjp_mv_upload_dir( '/', false ) . ' stripos: ' . stripos( $file_info['dirname'] . '/', mgjp_mv_upload_dir( '/', false ) ) );
 
   // check if file is protected by checking
   // if it is in the protected folder before
   // doing any permission checks
-  if ( 0 === stripos( $file_info['dirname'] . '/', mgjp_mv_upload_dir( '/', true ) ) ) {
+  if ( 0 === stripos( $file_info['dirname'] . '/', mgjp_mv_upload_dir( '/', false ) ) ) {
 
     error_log('Media Vault checking file permissions');
 
