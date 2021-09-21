@@ -24,7 +24,7 @@
  * @param string $action Force Download Flag, only acceptable value is 'safeforce'
  */
 function mgjp_mv_get_file( $rel_file, $action = '' ) {
-  error_log('Media Vault handling getting file...');
+  error_log('Media Vault handling getting file: ' . $rel_file);
 
   // $rel_file = path to the file to view/download, 
               // relative to the WP uploads folder
