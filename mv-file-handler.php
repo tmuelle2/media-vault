@@ -32,7 +32,7 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
   $upload_dir = wp_upload_dir();
 
   // only files in the WP uploads directory are allowed to be accessed:
-  $file = rtrim( $upload_dir['basedir'], '/' ) . str_replace( '..', '', isset( $rel_file ) ? $rel_file : '' );
+  $file = rtrim( $upload_dir['basedir'], '/' ) . '/' . str_replace( '..', '', isset( $rel_file ) ? $rel_file : '' );
 
   //---Basic Checks----------------------------------------------------//
 
