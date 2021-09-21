@@ -105,7 +105,7 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
 
     $permissions = mgjp_mv_get_the_permissions();
 
-    error_log('MV permissions ' . $permissions . ' attachment permission: ' . $permission);
+    error_log('MV permissions ' . print_r($permissions, true) . ' attachment permission: ' . print_r($permission, true));
 
     // permission set up error detection
     $standard_error_txt = ' ' . esc_html__( 'Therefore for safety and privacy reasons this file is unavailable. Please contact the website administrator.', 'media-vault' ) . '<p><a href="' . home_url() . '">&larr;' . esc_html__( 'Return to homepage', 'media-vault' ) .'</a></p>';
