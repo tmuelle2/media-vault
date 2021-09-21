@@ -54,14 +54,10 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
 
   $file_info = pathinfo( $rel_file );
 
-  error_log('File info: ' . print_r($file_info, true) . ' MV upload dir: ' . mgjp_mv_upload_dir( '/', false ) . ' stripos: ' . stripos( $file_info['dirname'] . '/', mgjp_mv_upload_dir( '/', false ) ) );
-
   // check if file is protected by checking
   // if it is in the protected folder before
   // doing any permission checks
   if ( 0 === stripos( $file_info['dirname'] . '/', mgjp_mv_upload_dir( '/', false ) ) ) {
-
-    error_log('Media Vault checking file permissions');
 
     // disable caching of this page by caching plugins ------//
     if ( ! defined( 'DONOTCACHEPAGE' ) )
@@ -102,10 +98,14 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
     }
     // ------------------------------------------------------//
 
+    error_log('MV getting permissions for attachment ' . $attachment_id);
+
     if ( ! $permission = mgjp_mv_get_the_permission( $attachment_id ) )
       $permission = get_option( 'mgjp_mv_default_permission', 'logged-in' );
 
     $permissions = mgjp_mv_get_the_permissions();
+
+    error_log('MV permissions ' . $permissions . ' attachment permission: ' . $permission);
 
     // permission set up error detection
     $standard_error_txt = ' ' . esc_html__( 'Therefore for safety and privacy reasons this file is unavailable. Please contact the website administrator.', 'media-vault' ) . '<p><a href="' . home_url() . '">&larr;' . esc_html__( 'Return to homepage', 'media-vault' ) .'</a></p>';
