@@ -43,6 +43,8 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
     wp_die( '404. File not found.' );
   }
 
+  error_log('MV getting file survived 404');
+
   $mime = wp_check_filetype( $file ); // Check filetype against allowed filetypes
 
   if ( isset( $mime['type'] ) && $mime['type'] ) {
@@ -51,6 +53,8 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
     status_header( 403 );
     wp_die( __( '403. Forbidden.<br/>You cannot directly access files of this type in this directory on this server. Please contact the website administrator.' ) );
   }
+
+  error_log('MV getting file survived 403');
 
   //---Permission Checks-----------------------------------------------//
 
