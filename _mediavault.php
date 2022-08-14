@@ -972,7 +972,7 @@ function mgjp_mv_is_protected( $attachment_id ) {
   // Get the base file path relative to the WordPress Uploads Directory
   $file = get_post_meta( $attachment_id, '_wp_attached_file', true );
 
-  error_log("MediaVault checking file directory: " . print_r($file, true));
+  error_log("MediaVault checking file directory: " . $file);
 
   // Check if the path begins with the Media Vault Protected Directory
   // Therefore check if the attachment's files are in the protected directory
