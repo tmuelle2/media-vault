@@ -14,7 +14,7 @@ License: GPLv3 or later
 Copyright 2013 Maximilianos G J Panas (email : m@maxpanas.com)
 
 This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License, version 3, as 
+it under the terms of the GNU General Public License, version 3, as
 published by the Free Software Foundation.
 
 This program is distributed in the hope that it will be useful,
@@ -617,7 +617,7 @@ function mgjp_mv_media_library_options_include() {
 
 
 /**
- * Add Media Vault flag to enable 
+ * Add Media Vault flag to enable
  * Media Vault mp6 styles for WP 3.8+
  *
  * @since 0.8.7
@@ -776,7 +776,7 @@ function mgjp_mv_upload_dir( $path = '', $in_url = false ) {
 
 /**
  * Generate the rewrite rules to reroute requests for
- * media uploads within protected folders and requests 
+ * media uploads within protected folders and requests
  * for media uploads with the `safeforce` download flag
  * set, to the file-handling script. Even supporting
  * WP Multisite.
@@ -796,7 +796,7 @@ function mgjp_mv_get_the_rewrite_rules() {
   if ( is_multisite() )
     $uploads_path .= '(?:/sites/[0-9]+)?';
 
-  // if multisite is on sub-directory mode add allowance for the site's 
+  // if multisite is on sub-directory mode add allowance for the site's
   // sub-directory in the rewrite regex
   if ( is_multisite() && ! is_subdomain_install() )
     $uploads_path = '(?:[_0-9a-zA-Z-]+/)?' . $uploads_path;
@@ -881,7 +881,7 @@ function mgjp_mv_check_rewrite_rules( $deactivation = false ) {
 
 
 /**
- * Adds the default Media Vault place-holder image to the 
+ * Adds the default Media Vault place-holder image to the
  * Media Library and saves the id of the attachment created
  * in the 'mgjp_mv_ir' option in the options table
  *
@@ -949,13 +949,13 @@ function mgjp_mv_load_placeholder_image( $restore_orig = false ) {
 /**
  * Check if an attachment is protected with Media Vault.
  *
- * A file is protected by media vault if and only if 
- * it is in the Media Vault Protected Directory within 
+ * A file is protected by media vault if and only if
+ * it is in the Media Vault Protected Directory within
  * the WordPress Uploads Directory.
  * ( eg: wp-content/uploads/_mediavault/../filename.ext )
  *
  * If a file is in the protected directory and no permission
- * meta is detected for the file, the default permission is 
+ * meta is detected for the file, the default permission is
  * used to check if the user is allowed access.
  *
  * So to check if an attachment is protected by Media Vault we
@@ -1051,14 +1051,19 @@ function mgjp_mv_get_the_permissions() {
  */
 function mgjp_mv_get_the_permission( $attachment_id, $meta_only = false ) {
 
+  error_log("Attempting to get MediaVault permsions for $attachment_id");
   if ( ! mgjp_mv_is_protected( $attachment_id ) )
     return false;
 
   $permission = get_post_meta( $attachment_id, '_mgjp_mv_permission', true );
 
-  return empty( $permission ) && ! $meta_only ?
-          get_option( 'mgjp_mv_default_permission', 'logged-in' ) :
-          $permission;
+  $permission = empty( $permission ) && ! $meta_only ?
+                  get_option( 'mgjp_mv_default_permission', 'logged-in' ) :
+                  $permission;
+
+  error_log("MediaVault permsions for $attachment_id are " . print_r($permission, true));
+
+  return $permission;
 }
 
 /**
