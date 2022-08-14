@@ -25,7 +25,9 @@
  */
 function mgjp_mv_get_file( $rel_file, $action = '' ) {
 
-  // $rel_file = path to the file to view/download, 
+  error_log('MV getting file ' . $rel_file);
+
+  // $rel_file = path to the file to view/download,
               // relative to the WP uploads folder
               // (eg:'/media-vault/2013/10/media-vault-150x150.jpg')
 
