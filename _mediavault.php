@@ -369,8 +369,11 @@ function mgjp_mv_handle_file_request() {
 
     // used by @func mgjp_mv_check_rewrite_rules to verify rewrite rules are
     // set and working as intended
-    if ( isset( $_GET['mgjp_mv_rewrite_test'] ) && $_GET['mgjp_mv_rewrite_test'] )
+    if ( isset( $_GET['mgjp_mv_rewrite_test'] ) && $_GET['mgjp_mv_rewrite_test'] ) {
+      error_log('MediaVault rewrite test failed: ' . $_GET['mgjp_mv_rewrite_test']);
       die( 'pass' );
+    }
+
 
     require( plugin_dir_path( __FILE__ ) . 'mv-file-handler.php' );
 
