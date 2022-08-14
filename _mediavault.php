@@ -365,6 +365,8 @@ function mgjp_mv_handle_file_request() {
 
   if ( isset( $_GET['mgjp_mv_file'] ) && ! empty( $_GET['mgjp_mv_file'] ) ) {
 
+    error_log('MediaVault file get triggered for: ' . $_GET['mgjp_mv_file']);
+
     // used by @func mgjp_mv_check_rewrite_rules to verify rewrite rules are
     // set and working as intended
     if ( isset( $_GET['mgjp_mv_rewrite_test'] ) && $_GET['mgjp_mv_rewrite_test'] )
