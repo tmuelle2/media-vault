@@ -60,6 +60,8 @@ function mgjp_mv_get_file( $rel_file, $action = '' ) {
 
   $file_info = pathinfo( $rel_file );
 
+  error_log('MV getting file : ' . $file_info['dirname'] . " is protected: " . (0 === stripos( $file_info['dirname'] . '/', mgjp_mv_upload_dir( '/', false ) )));
+
   // check if file is protected by checking
   // if it is in the protected folder before
   // doing any permission checks
